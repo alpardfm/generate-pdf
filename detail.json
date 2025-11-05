@@ -1,0 +1,60 @@
+{
+        "transactionInformation": {
+            "applicationId": "250926034079",
+            "debitAccountNumber": "020601005938539",
+            "debitAccountName": "MERXXANA",
+            "transactionDate": "26/09/2025",
+            "shipTo": "1000012",
+            "productGroupId": "08",
+            "productGroupName": "Fuel",
+            "status": "PENDING",
+            "quotationNumber": "",
+            "schedulingAgreementNumber": "",
+            "errorMessagePayment": "",
+            "depoId": "2150",
+            "depoName": "SPBE-Wanantara D. Satria",
+            "payerId": "1000013",
+            "payerName": "Customer SP",
+            "shipToDesc": "Customer SP",
+            "soldTo": "1000011",
+            "soldToDesc": "Customer SP"
+        },
+        "purchaseDetail": {
+            "netValue": 63364774,
+            "ppnTax": 7783237,
+            "pbbkbTax": 0,
+            "pphTax": 212267,
+            "grossValue": 71360278,
+            "fee": 0,
+            "debitCreditValue": 0,
+            "totalAmount": 71360278,
+            "totalPayment": 71360278
+        },
+        "task": {
+            "taskId": "697086",
+            "status": "Pending",
+            "reasons": "",
+            "lastApprovedByName": "",
+            "lastRejectedByName": "",
+            "updatedByName": "CU_KIGIT_M",
+            "createdByName": "CU_KIGIT_M",
+            "type": "DO Pertamina",
+            "comment": "",
+            "createdAt": "26/09/2025 10:24:59",
+            "updatedAt": "26/09/2025 10:25:02",
+            "approvedAt": "01/01/1970 07:00:00",
+            "rejectedAt": "01/01/1970 07:00:00"
+        },
+        "workflowDoc": "{\"workflow\":{\"header\":{\"productID\":430,\"productName\":\"DO Pertamina\",\"currencyID\":1,\"currencyName\":\"IDR\",\"companyID\":6000919,\"companyName\":\"Gigit Bite\",\"transactionalNumber\":71360278,\"workflowID\":1004,\"maker\":{\"userID\":1664,\"userName\":\"CU_KIGIT_M\"},\"uaID\":1000580},\"records\":{\"lastUpdatedAt\":{\"seconds\":1758857098,\"nanos\":440097000},\"topRange\":10000000000,\"bottomRange\":1,\"flows\":[{\"workflowLogicID\":1115103,\"verifier\":{},\"approver\":{\"Requirement\":1,\"participants\":[{\"roleID\":1704,\"step\":\"signer\",\"priorityNumber\":1}]},\"releaser\":{},\"appCurrPriority\":1,\"listRoles\":[1704]},{\"workflowLogicID\":1115104,\"verifier\":{\"Requirement\":1,\"participants\":[{\"roleID\":1421,\"step\":\"checker\",\"priorityNumber\":1}]},\"approver\":{\"Requirement\":1,\"participants\":[{\"roleID\":1704,\"step\":\"signer\",\"priorityNumber\":1}]},\"releaser\":{},\"verCurrPriority\":1,\"appCurrPriority\":1,\"listRoles\":[1421,1704]}]},\"createdBy\":{\"userID\":1664,\"username\":\"CU_KIGIT_M\"},\"createdAt\":{\"seconds\":1758857096,\"nanos\":887484000},\"currentRoleIDs\":[1704,1421],\"currentStep\":\"pending\"}}",
+        "materialInformation": [
+            {
+                "materialId": "A040900076",
+                "materialDescription": "PERTALITE",
+                "deliveryDate": "19/09/2025",
+                "transporter": "",
+                "trip": "1",
+                "quantity": 8,
+                "uom": ""
+            }
+        ]
+    }

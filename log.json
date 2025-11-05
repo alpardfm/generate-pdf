@@ -1,0 +1,26 @@
+[
+        {
+            "command": "Create",
+            "type": "do_pertamina",
+            "action": "save & send for approval",
+            "description": "",
+            "username": "CU_KIGIT_M",
+            "companyName": "Gigit Bite",
+            "task": null,
+            "createdAt": "2025-09-03T06:45:27.909Z",
+            "taskID": "697086",
+            "key": "DOP697086"
+        },
+        {
+            "command": "Create",
+            "type": "do_pertamina",
+            "action": "save as draft",
+            "description": "",
+            "username": "CU_KIGIT_M",
+            "companyName": "Gigit Bite",
+            "task": null,
+            "createdAt": "2025-04-15T07:00:52.152Z",
+            "taskID": "697086",
+            "key": "DOP697086"
+        }
+    ]

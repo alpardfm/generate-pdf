@@ -1,0 +1,6 @@
+projectKey=generate-pdf-app
+serverUrl=http://localhost:9000
+serverVersion=9.9.4.87374
+dashboardUrl=http://localhost:9000/dashboard?id=generate-pdf-app
+ceTaskId=AZpPF_wF6uyCJUVZPbH7
+ceTaskUrl=http://localhost:9000/api/ce/task?id=AZpPF_wF6uyCJUVZPbH7
