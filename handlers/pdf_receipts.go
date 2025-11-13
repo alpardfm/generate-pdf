@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/jung-kurt/gofpdf"
 )
@@ -424,7 +425,6 @@ type Block struct {
  */
 func (s *PDFHandler) GenerateReceipt(transactionId string, status string, data []Block) (*gofpdf.Fpdf, error) {
 	var paper Paper = GetPaperA4()
-	var borderRadius float64 = 3.0
 
 	pdf := gofpdf.New("P", "mm", "A4", "assets/font")
 
@@ -433,12 +433,8 @@ func (s *PDFHandler) GenerateReceipt(transactionId string, status string, data [
 	pdf.AddFont("BRIDigital", "B", "BRIDigitalText-SemiBold.json")
 	pdf.AddFont("BRIDigitalLogo", "B", "BRIDigitalText-SemiBold.json")
 
-	_ = borderRadius
-	_ = paper
-
 	pdf.SetMargins(paper.MarginSetup.XMargin, paper.MarginSetup.YMargin, paper.MarginSetup.XMargin)
 	pdf.SetAutoPageBreak(true, 10)
-	pdf.AddPage()
 
 	pdf.SetHeaderFunc(func() {
 		pdf.ImageOptions("./assets/images/receipt-header.png", 0, 0, 210, 0, false, gofpdf.ImageOptions{
@@ -448,25 +444,25 @@ func (s *PDFHandler) GenerateReceipt(transactionId string, status string, data [
 		drawBackgroundRounded(pdf, paper)
 	})
 
-	pdf.ImageOptions("./assets/images/receipt-header.png", 0, 0, 210, 0, false, gofpdf.ImageOptions{
-		ReadDpi:   false,
-		ImageType: "",
-	}, 0, "")
-	drawBackgroundRounded(pdf, paper)
-
-	drawTransactionDetails(pdf, paper, transactionId)
-	drawContentsReceipt(pdf, paper, data)
-
 	pdf.SetFooterFunc(func() {
+		currentTime := time.Now()
+		formattedTime := currentTime.Format("02/01/2006 15:04:05")
+
 		pdf.SetY(paper.FooterSetup.Y)
 		pdf.SetFont("BRIDigital", "", paper.FooterSetup.FontSize)
 		pdf.SetTextColor(128, 128, 128)
-		pdf.CellFormat(0, 10, "Terima kasih telah menggunakan layanan kami.", "", 0, "R", false, 0, "")
+		pdf.CellFormat(0, 10, fmt.Sprintf("%s - Halaman %d / %d", formattedTime, pdf.PageNo(), pdf.PageCount()), "", 0, "R", false, 0, "")
+
 		pdf.Ln(5)
 		pdf.SetFillColor(16, 47, 50)
 		pdf.Rect(0, paper.PaperSize.Height-paper.FooterSetup.RectHeight, paper.PaperSize.Width, paper.FooterSetup.RectHeight, "F")
 		pdf.Ln(2)
 	})
+
+	pdf.AddPage()
+	drawBackgroundRounded(pdf, paper)
+	drawTransactionDetails(pdf, paper, transactionId)
+	drawContentsReceipt(pdf, paper, data)
 
 	return pdf, nil
 }
@@ -640,12 +636,11 @@ func drawBlockRows(pdf *gofpdf.Fpdf, paper Paper, block Block) {
  * and recreate the header on the new page.
  */
 func drawBlockTable(pdf *gofpdf.Fpdf, paper Paper, block Block) {
+	pdf.SetY(pdf.GetY() + 4)
+
 	pdf.SetFont("BRIDigital", "B", 10)
 	pdf.SetTextColor(0, 0, 0)
 	borderRadius := 3.0
-
-	// Calculate available height on current page
-	bottomMargin := 0.0 // Adjust as needed
 
 	// Draw header for first page
 	drawTableHeader(pdf, paper, block, false)
@@ -659,9 +654,13 @@ func drawBlockTable(pdf *gofpdf.Fpdf, paper Paper, block Block) {
 		// Calculate row height
 		rowHeight := calculateRowHeight(pdf, tableRow, block, paper)
 
-		// Check if we need a new page
-		if pdf.GetY()+rowHeight > paper.RectSetup.InnerH-bottomMargin {
+		// Check if we need a new page. 16 is the header height
+		// plus some padding.
+		rectHeight := paper.RectSetup.InnerH + 16
+
+		if pdf.GetY() > rectHeight {
 			pdf.AddPage()
+			pdf.SetY(paper.RectSetup.InnerY)
 			drawTableHeader(pdf, paper, block, true)
 		}
 
