@@ -4,10 +4,138 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/jung-kurt/gofpdf"
 )
+
+/* ---------------------- struct.go ---------------------- */
+type Paper struct {
+	PaperSize            PaperSize
+	MarginSetup          MarginSetup
+	RectSetup            RectSetup
+	TransformSetup       TransformSetup
+	LineHt               float64
+	TotalPaymentFont     FontSize
+	ValueFont            FontSize
+	FooterSetup          FooterSetup
+	WLogo1               LogoSetup
+	WLogo2               LogoSetup
+	TransactionTextSetup TransactionTextSetup
+	BottomSetup          BottomSetup
+	ValueCellSetup       CellSetup
+	HeaderSetup          HeaderSetup
+	IconSetup            IconSetup
+}
+
+type PaperSize struct {
+	Width  float64
+	Height float64
+}
+
+type FontSize struct {
+	ValueFontSize  float64
+	HeaderFontSize float64
+}
+
+type MarginSetup struct {
+	XMargin float64
+	YMargin float64
+}
+
+type RectSetup struct {
+	X      float64
+	Y      float64
+	W      float64
+	H      float64
+	InnerX float64
+	InnerY float64
+	InnerW float64
+	InnerH float64
+}
+
+type TransformSetup struct {
+	X struct {
+		A float64
+		B float64
+	}
+	Y struct {
+		A float64
+		B float64
+	}
+	TextX struct {
+		A float64
+		B float64
+	}
+	TextY struct {
+		A float64
+		B float64
+	}
+	Angle float64
+	I     struct {
+		Min float64
+		Max float64
+	}
+	J struct {
+		Min float64
+		Max float64
+	}
+}
+
+type LogoSetup struct {
+	X float64
+	Y float64
+	W float64
+	H float64
+}
+
+type FooterSetup struct {
+	Y           float64
+	RectHeight  float64
+	WordSpacing float64
+	FontSize    float64
+}
+
+type TransactionTextSetup struct {
+	FontSize   float64
+	UpperSpace float64
+	LowerSpace float64
+}
+
+type BottomSetup struct {
+	BottomLimit      float64
+	BottomLimitMinus float64
+	FontSize         float64
+}
+
+type CellSetup struct {
+	W1         float64
+	W2         float64
+	WMultiCell float64
+	H1         float64
+	H2         float64
+	HMultiCell float64
+	Ln1        float64
+	Ln2        float64
+}
+
+type HeaderSetup struct {
+	Space1   float64
+	Space2   float64
+	W        float64
+	H        float64
+	X        float64
+	Y        float64
+	FontSize float64
+}
+
+type IconSetup struct {
+	X float64
+	Y float64
+	W float64
+	H float64
+}
+
+/* -------------------------------------------------------------------------- */
 
 type PDFHandler struct {
 	fontPath    string
@@ -24,32 +152,170 @@ func NewPDFHandler() *PDFHandler {
 }
 
 func (h *PDFHandler) GenerateDownloadReceiptPDF(w http.ResponseWriter, r *http.Request) {
-	data := map[string]interface{}{
-		"transactionId":       "DOP1234567890",
-		"status":              "Sukses",
-		"debitAccountName":    "Khrisna Joh",
-		"accountNumber":       "00123456789",
-		"moduleType":          "Product Allocation",
-		"totalPayment":        "IDR 17.070.000,00",
-		"netValue":            "IDR 16.000.000,00",
-		"ppnTax":              "IDR 2.086.000,00",
-		"pbbkbTax":            "IDR 0,00",
-		"pphTax":              "IDR 0,00",
-		"grossValue":          "IDR 18.068.000,00",
-		"debitCreditValue":    "IDR 1.000.000,00",
-		"totalAmount":         "IDR 17.068.000,00",
-		"soldToName":          "PT. Pertamina Tbk",
-		"buyer":               "PT. Perusahaan Customer",
-		"depoName":            "Depo Jakarta Utara",
-		"salesOrganization":   "SO002",
-		"productGroup":        "Bahan Bakar Minyak",
-		"distributionChannel": "Corporate Sales",
-		"payer":               "PT. Perusahaan Customer",
-	}
+	data := []Block{}
+
+	data = append(data, Block{
+		Fields: []Field{
+			{
+				Key:   "Tanggal Transaksi",
+				Value: "Tipe Transaksi",
+			},
+			{
+				Key:   "05/10/2025 09:10:33",
+				Value: "Product Allocation",
+			},
+		},
+		Type:      BLOCK_TYPE_ROWS,
+		ShowTitle: false,
+
+		// Override style per column to make first column 30% width and second //
+		// column 70% width
+		ColumnStyleOverrides: []ColumnStyleOverride{
+			{
+				ColIndex: 0,
+				Width:    0.35,
+			},
+			{
+				ColIndex: 1,
+				Width:    0.65,
+			},
+		},
+	})
+
+	data = append(data, Block{
+		Title: "Informasi Transaksi",
+		Fields: []Field{
+			{
+				Key:   "Status SO",
+				Value: "Release",
+			},
+			{
+				Key:   "Nomor SO",
+				Value: "4000012322",
+			},
+			{
+				Key:   "ID Aplikasi",
+				Value: "250214024675",
+			},
+			{
+				Key:   "Nomor Perjanjian Penjadwalan",
+				Value: "352424410",
+			},
+			{
+				Key:   "Sumber Dana",
+				Value: "Khris - Khrisna Joh",
+			},
+			{
+				Key:   "",
+				Value: "PT. BANK RAKYAT INDONESIA (PERSERO) TBK - BRINIDJA",
+			},
+			{
+				Key:   "",
+				Value: "1001******890",
+			},
+			{
+				Key:   "Organisasi Penjualan",
+				Value: "007-C&T LPG Retail",
+			},
+			{
+				Key:   "Grup Produk",
+				Value: "001-LPG/BBG",
+			},
+			{
+				Key:   "Tujuan Pengiriman",
+				Value: "100123 - PT. Raya Jaya Mulya",
+			},
+			{
+				Key:   "Pembeli",
+				Value: "966787 - PT. Makmur Sentosa",
+			},
+			{
+				Key:   "Depo",
+				Value: "2150 - SPBE Wanantara D. Satria",
+			},
+			{
+				Key:   "Pembayar",
+				Value: "966787 - PT. Makmur Sentosa",
+			},
+		},
+		Type:      BLOCK_TYPE_ROWS,
+		ShowTitle: true,
+
+		// Override style per column to make first column 30% width and second //
+		// column 70% width
+		ColumnStyleOverrides: []ColumnStyleOverride{
+			{
+				ColIndex: 0,
+				Width:    0.35,
+			},
+			{
+				ColIndex: 1,
+				Width:    0.65,
+			},
+		},
+	})
+
+	data = append(data, Block{
+		Title:     "Rincian Transaksi",
+		Type:      BLOCK_TYPE_ROWS,
+		ShowTitle: true,
+		Fields: []Field{
+			{
+				Key:   "Nilai Bersih",
+				Value: "IDR 16.000.000,00",
+			},
+			{
+				Key:   "Pajak PPN",
+				Value: "IDR 2.086.000,00",
+			},
+			{
+				Key:   "Pajak PBBKB",
+				Value: "IDR 0,00",
+			},
+			{
+				Key:   "Pajak PPH",
+				Value: "IDR 0,00",
+			},
+			{
+				Key:   "Nilai Kotor",
+				Value: "IDR 18.068.000,00",
+			},
+			{
+				Key:   "Nilai Debit atau Kredit",
+				Value: "IDR 1.000.000,00",
+			},
+			{
+				Key:   "Biaya Admin",
+				Value: "IDR 2.000,00",
+			},
+			{
+				Key:     "Total Pembayaran",
+				Value:   "IDR 18.071.000,00",
+				IsTotal: true,
+			},
+		},
+		StartFrom: 0.35,
+	})
+
+	data = append(data, Block{
+		Title:     "Detail Produk",
+		ShowTitle: true,
+		Type:      BLOCK_TYPE_TABLE,
+		TableData: TableData{
+			Rows: [][]string{
+				{"Material", "Deskripsi", "Trip", "Qty", "UoM", "Transporter", "Tanggal Kirim"},
+				{"A040900001", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"A040900002", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"A040900003", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"A040900004", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"A040900005", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+			},
+			ColSize: []float64{0.15, 0.20, 0.10, 0.10, 0.10, 0.15, 0.20},
+		},
+	})
 
 	var buf bytes.Buffer
-
-	pdf, err := h.GenerateReceipt(data)
+	pdf, err := h.GenerateReceipt("DOP1234567890", "success", data)
 	if err != nil {
 		fmt.Println("Error generating report:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -74,354 +340,554 @@ func (h *PDFHandler) GenerateDownloadReceiptPDF(w http.ResponseWriter, r *http.R
 	w.Write(buf.Bytes())
 }
 
-func (s *PDFHandler) GenerateReceipt(data interface{}) (*gofpdf.Fpdf, error) {
-	pdf := gofpdf.New("P", "mm", "A4", "assets/font")
-	pdf.SetAutoPageBreak(true, 45)
+/*
+ * BlockType adalah tipe dari blok yang akan dirender di dalam PDF.
+ */
 
+const BLOCK_TYPE_ROWS = "rows"
+const BLOCK_TYPE_TABLE = "table"
+
+/*
+ * Another specific struct for block type. This time for column style override.
+ * You can change for example font size, boldness, text align per column. Just
+ * specify the column index (0-based). For example: If you want to change the
+ * style of the second column to have bold text and center alignment, you can
+ * create a ColumnStyleOverride like this:
+ *
+ * ColumnStyleOverride{
+ *     ColIndex:   1,
+ *     FontSize:   12,
+ *     FontWeight: "bold",
+ *     TextAlign:  "CM",
+ *     Margin:     2,
+ * }
+ */
+type ColumnStyleOverride struct {
+	ColIndex   int
+	Width      float64
+	FontSize   float64
+	FontWeight string
+	TextAlign  string
+	Margin     float64
+}
+
+type RowStyleOverride struct {
+	RowIndex   int
+	FontSize   float64
+	FontWeight string
+	TextAlign  string
+	Margin     float64
+}
+
+type Field struct {
+	Key     string
+	Value   interface{}
+	IsTotal bool
+}
+
+type TableData struct {
+	Headers []string
+	Rows    [][]string
+	ColSize []float64 // Column size in percentage (0.0 - 1.0). 1.0 = 100% width
+	// of table
+}
+
+/*
+ * Kalau kita cermati sebetulnya data setiap bagan itu mirip, hanya saja
+ * stylenya yang berbeda, ada yang table dan ada yang berbentuk list. Namun
+ * secara data, mereka semua memiliki key, value dan title. Namun di sini
+ * kita akan membuat field "type" untuk membedakan apakah itu grid atau list
+ * atau rows.
+ */
+type Block struct {
+	Title                string
+	ShowTitle            bool
+	Fields               []Field
+	TableData            TableData
+	Type                 string
+	ColumnStyleOverrides []ColumnStyleOverride
+
+	/*
+	 * Special case for a row that needs to start from specific X position. To
+	 * make consistent unit, we're using float64 between 0.0 to 1.0, where 0.0
+	 * is the very left and 1.0 is the very right.
+	 */
+	StartFrom float64
+}
+
+/*
+ * GenerateReceipt generates a PDF receipt for a given transaction.
+ *
+ * @param transactionId The ID of the transaction.
+ * @param status. TODO: use proper enum or type for status.
+ * @param Data[] the data to be included in the receipt.
+ */
+func (s *PDFHandler) GenerateReceipt(transactionId string, status string, data []Block) (*gofpdf.Fpdf, error) {
+	var paper Paper = GetPaperA4()
+	var borderRadius float64 = 3.0
+
+	pdf := gofpdf.New("P", "mm", "A4", "assets/font")
+
+	pdf.AddUTF8Font("BRIDigital-Light", "", "BRIDigitalText-Light.ttf")
 	pdf.AddFont("BRIDigital", "", "BRIDigitalText-Regular.json")
 	pdf.AddFont("BRIDigital", "B", "BRIDigitalText-SemiBold.json")
 	pdf.AddFont("BRIDigitalLogo", "B", "BRIDigitalText-SemiBold.json")
 
-	pdf.SetHeaderFunc(
-		func() {
-			s.addHeader(pdf)
-			drawBox(pdf, 10, 35, 297-20, 420-55)
-		})
-	pdf.AddPageFormat("P", gofpdf.SizeType{Wd: 297, Ht: 420})
-	// Add header
-	// Add watermark background
+	_ = borderRadius
+	_ = paper
 
-	fontSize := 12.0
-	fontName := "BRIDigital"
-	// heightRow := 10.0
-	// heightHeader := 15.0
-	pageW, pageHeight := pdf.GetPageSize()
-	pdf.SetFont(fontName, "", fontSize)
-	// paddingDetailTrx := 20.0
+	pdf.SetMargins(paper.MarginSetup.XMargin, paper.MarginSetup.YMargin, paper.MarginSetup.XMargin)
+	pdf.SetAutoPageBreak(true, 10)
+	pdf.AddPage()
 
-	pdf.SetFont(fontName, "B", 16)
-
-	pdf.AliasNbPages("{nb}")
-
-	pdf.SetFooterFunc(func() {
-		pdf.SetY(-19)
-		pdf.SetX(225)
-
-		currentTime := time.Now()
-		formattedTime := currentTime.Format("02/01/2006 15:04:05")
-
-		// Text kanan - juga pakai MultiCell untuk alignment yang konsisten
-		pdf.MultiCell(pageW/2, 7, fmt.Sprintf("%v - Halaman %d/{nb}", formattedTime, pdf.PageNo()), "", "L", false)
+	pdf.SetHeaderFunc(func() {
+		pdf.ImageOptions("./assets/images/receipt-header.png", 0, 0, 210, 0, false, gofpdf.ImageOptions{
+			ReadDpi:   false,
+			ImageType: "",
+		}, 0, "")
+		drawBackgroundRounded(pdf, paper)
 	})
 
-	// Add content
-	s.addContentReceipt(pdf, data)
+	pdf.ImageOptions("./assets/images/receipt-header.png", 0, 0, 210, 0, false, gofpdf.ImageOptions{
+		ReadDpi:   false,
+		ImageType: "",
+	}, 0, "")
+	drawBackgroundRounded(pdf, paper)
 
-	pdf.SetX(15)
-	pdf.CellFormat(pageW-30, 12, "Dokumen ini merupakan bukti transaksi yang sah dan dicetak otomatis oleh sistem.", "0", 0, "L", false, 0, "")
+	drawTransactionDetails(pdf, paper, transactionId)
+	drawContentsReceipt(pdf, paper, data)
 
-	// pdf.Ln(10)
-
-	pdf.SetAutoPageBreak(false, 0)
-
-	drawDashedLine(pdf, 15, pageHeight-45, pageW-16, pageHeight-45)
-
-	// pdf.Ln(10)
-
-	pdf.SetFillColor(235, 244, 245) // Warna background
-	pdf.SetTextColor(0, 0, 0)
-	pdf.SetXY(15, pageHeight-40)
-	pdf.CellFormat(pageW-30, 15, "Terima kasih telah bertransaksi menggunakan Qlola BRI, bila menemui kendala silakan hubungi kami di 500001 atau qlola@bri.co.id", "0", 0, "C", true, 0, "")
-
-	// // Add footer
-	// s.addFooter(pdf)
+	pdf.SetFooterFunc(func() {
+		pdf.SetY(paper.FooterSetup.Y)
+		pdf.SetFont("BRIDigital", "", paper.FooterSetup.FontSize)
+		pdf.SetTextColor(128, 128, 128)
+		pdf.CellFormat(0, 10, "Terima kasih telah menggunakan layanan kami.", "", 0, "R", false, 0, "")
+		pdf.Ln(5)
+		pdf.SetFillColor(16, 47, 50)
+		pdf.Rect(0, paper.PaperSize.Height-paper.FooterSetup.RectHeight, paper.PaperSize.Width, paper.FooterSetup.RectHeight, "F")
+		pdf.Ln(2)
+	})
 
 	return pdf, nil
 }
 
-func drawBox(pdf *gofpdf.Fpdf, x, y, width, height float64) {
-	radius := 5.0 // Radius untuk rounded corners
+func drawBackgroundRounded(pdf *gofpdf.Fpdf, paper Paper) {
+	borderSize := 0.5
 
-	// 1. Background PUTIH dengan rounded corners
+	pdf.SetFillColor(224, 224, 224)
+	pdf.RoundedRect(paper.RectSetup.X-borderSize, paper.RectSetup.Y-borderSize, paper.RectSetup.W+(2*borderSize), paper.RectSetup.H+(2*borderSize), 3, "1234", "F")
+
 	pdf.SetFillColor(255, 255, 255)
-
-	// Rectangle utama (tanpa area corners)
-	pdf.Rect(x+radius, y, width-(2*radius), height, "F") // Middle horizontal
-	pdf.Rect(x, y+radius, width, height-(2*radius), "F") // Middle vertical
-
-	// 2. Rounded corners (pakai ellipse yang bersih)
-	pdf.Ellipse(x+radius, y+radius, radius, radius, 0, "F")              // Top-left
-	pdf.Ellipse(x+width-radius, y+radius, radius, radius, 0, "F")        // Top-right
-	pdf.Ellipse(x+width-radius, y+height-radius, radius, radius, 0, "F") // Bottom-right
-	pdf.Ellipse(x+radius, y+height-radius, radius, radius, 0, "F")       // Bottom-left
-
-	// 3. Border dengan rounded corners (pakai line yang bersih)
-	pdf.SetDrawColor(0, 0, 0)
-
-	// Garis lurus saja, tanpa corner functions yang bikin segitiga
-	pdf.Line(x+radius, y, x+width-radius, y)               // Top
-	pdf.Line(x+width, y+radius, x+width, y+height-radius)  // Right
-	pdf.Line(x+radius, y+height, x+width-radius, y+height) // Bottom
-	pdf.Line(x, y+radius, x, y+height-radius)              // Left
-
-	// 4. Watermark
-	pdf.ImageOptions("./assets/images/newwatermark3.png", x, y, width, height, false, gofpdf.ImageOptions{
-		ReadDpi:   false,
-		ImageType: "",
-	}, 0, "")
+	pdf.RoundedRect(paper.RectSetup.X, paper.RectSetup.Y, paper.RectSetup.W, paper.RectSetup.H, 3, "1234", "F")
 }
 
-// Function untuk membuat rounded rectangle
-func drawRoundedRect(pdf *gofpdf.Fpdf, x, y, w, h, r float64, style string) {
-	// Style: "F" untuk fill, "D" untuk draw, "FD" untuk both
+func drawTransactionDetails(pdf *gofpdf.Fpdf, paper Paper, transactionId string) {
+	successIconPath := "assets/images/Icon-2.png"
+	pdf.ImageOptions(successIconPath, paper.IconSetup.X, paper.IconSetup.Y, paper.IconSetup.W, paper.IconSetup.H, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
 
-	// Jika radius terlalu besar, adjust
-	if r > w/2 {
-		r = w / 2
-	}
-	if r > h/2 {
-		r = h / 2
-	}
+	lineHeight := 5.0
+	containerStartX := paper.RectSetup.InnerX + paper.IconSetup.W + (paper.MarginSetup.XMargin / 2)
+	containerBottomY := paper.RectSetup.InnerY + paper.IconSetup.H + paper.MarginSetup.YMargin
 
-	// Draw the four corners and sides
-	pdf.Curve(x+r, y, x, y, x, y+r, style)             // Top-left corner
-	pdf.Curve(x+w-r, y, x+w, y, x+w, y+r, style)       // Top-right corner
-	pdf.Curve(x+w, y+h-r, x+w, y+h, x+w-r, y+h, style) // Bottom-right corner
-	pdf.Curve(x+r, y+h, x, y+h, x, y+h-r, style)       // Bottom-left corner
+	pdf.SetFont("BRIDigital", "B", 13)
+	pdf.SetTextColor(24, 24, 24)
+	pdf.Text(containerStartX, paper.RectSetup.InnerY+6, "Transaksi Sukses")
+	pdf.SetFont("BRIDigital-Light", "", 10)
+	pdf.Text(containerStartX, paper.RectSetup.InnerY+7+lineHeight, transactionId)
 
-	// Fill the center rectangle if needed
-	if style == "F" || style == "FD" {
-		pdf.Rect(x+r, y, w-2*r, h, "F") // Top and bottom rectangles
-		pdf.Rect(x, y+r, w, h-2*r, "F") // Middle rectangle
-	}
+	pdf.SetFont("BRIDigital", "B", 10)
+	strWidth := pdf.GetStringWidth("DO Pertamina")
+	pdf.Text(paper.RectSetup.InnerW-strWidth, paper.RectSetup.InnerY+10, "DO Pertamina")
 
-	// Draw the straight sides if needed
-	if style == "D" || style == "FD" {
-		pdf.Line(x+r, y, x+w-r, y)     // Top side
-		pdf.Line(x+w, y+r, x+w, y+h-r) // Right side
-		pdf.Line(x+r, y+h, x+w-r, y+h) // Bottom side
-		pdf.Line(x, y+r, x, y+h-r)     // Left side
-	}
+	drawDashedLine(pdf, paper.RectSetup.InnerX, containerBottomY-2, paper.RectSetup.InnerW, containerBottomY-2)
 }
 
 func drawDashedLine(pdf *gofpdf.Fpdf, x1, y1, x2, y2 float64) {
-	pdf.SetDrawColor(0, 0, 0)
+	pdf.SetDrawColor(224, 224, 224)
 	pdf.SetLineWidth(0.5)
 
 	// Pattern dash sederhana: [panjang_dash, panjang_gap]
-	pdf.SetDashPattern([]float64{3, 2}, 0) // Dash 3mm, Gap 2mm
+	pdf.SetDashPattern([]float64{2, 2}, 0)
 	pdf.Line(x1, y1, x2, y2)
 	pdf.SetDashPattern([]float64{}, 0) // Reset ke solid
 }
 
-func (s *PDFHandler) addContentReceipt(pdf *gofpdf.Fpdf, data interface{}) {
-	// Set text color to black for the first part
-	getX, getY := pdf.GetXY()
-	pdf.SetXY(getX+2, getY-7)
-	pdf.SetTextColor(0, 0, 0)
-	imagePathIconSuccess := "assets" + "/images/icon-2.png"
-	imageIconSucessWidth := 15.0
-	imageIconSucessHeight := 15.0
-	x, y := pdf.GetXY()
-	pdf.ImageOptions(imagePathIconSuccess, x+2, y+2, imageIconSucessWidth, imageIconSucessHeight, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
-	pdf.CellFormat(0, 6, "", "", 0, "L", false, 0, "")
+func drawContentsReceipt(pdf *gofpdf.Fpdf, paper Paper, data []Block) {
+	pdf.SetY(paper.RectSetup.InnerY + paper.IconSetup.H + paper.MarginSetup.YMargin)
 
-	pdf.SetX(10 + imageIconSucessWidth + 8)
-	pdf.SetTextColor(0, 0, 0)
-	pdf.SetFont("Arial", "", 14)
-	pdf.Cell(0, 8, fmt.Sprintf("%v", "Transaksi Sukses"))
-	pdf.Ln(10)
+	// Loop through each block and render based on its type
+	for _, block := range data {
+		if block.ShowTitle {
+			pdf.SetX(paper.RectSetup.InnerX)
+			startX, startY := pdf.GetX(), pdf.GetY()
 
-	pdf.SetX(10 + imageIconSucessWidth + 8)
-	pdf.SetFont("Arial", "", 14)
-	pdf.SetTextColor(107, 114, 128)
+			// 1. Draw semi-transparent background rectangle
+			pdf.SetAlpha(0.16, "Normal")
+			pdf.SetFillColor(61, 136, 143)
+			pdf.Rect(startX, startY, paper.RectSetup.InnerW, paper.HeaderSetup.H, "F")
+			pdf.SetAlpha(1, "Normal")
 
-	// Tulis bagian pertama
-	pdf.CellFormat(0, 6, "DOP1234567890", "", 0, "L", false, 0, "")
+			// 2. Draw text on top (fully opaque)
+			pdf.SetFont("BRIDigital", "B", 10)
+			pdf.SetTextColor(0, 0, 0)
 
-	pageW, _ := pdf.GetPageSize()
-	pdf.SetX(pageW - 50)
-	pdf.CellFormat(0, 6, "DO Pertamina", "", 0, "L", false, 0, "")
+			// 3. Calculate text positioning (left-aligned with some padding)
+			textX := startX + 1 // 2mm padding from left
+			textY := startY
 
-	pdf.Ln(6)
+			pdf.SetXY(textX, textY)
+			pdf.CellFormat(paper.RectSetup.InnerW-8, paper.HeaderSetup.H, block.Title,
+				"", 0, "L", false, 0, "") // fill = false
 
-	drawDashedLine(pdf, getX+6, getY+20, pageW-16, getY+20)
+			// 3. Move to next position after the block
+			pdf.SetXY(startX, startY+paper.HeaderSetup.H)
+		}
 
-	// Details list
-	details := []struct {
-		label string
-		value string
-	}{
-		{"Tanggal Transaksi", "05/11/2025 09:10:33"},
-		{"Tipe Transaksi", "Product Allocation"},
+		switch block.Type {
+		case BLOCK_TYPE_ROWS:
+			drawBlockRows(pdf, paper, block)
+		case BLOCK_TYPE_TABLE:
+			drawBlockTable(pdf, paper, block)
+		}
+	}
+}
+
+func drawBlockRows(pdf *gofpdf.Fpdf, paper Paper, block Block) {
+	if block.StartFrom > 0 {
+		pdf.SetX(paper.RectSetup.InnerX + (paper.RectSetup.InnerW * block.StartFrom))
+	} else {
+		pdf.SetX(paper.RectSetup.InnerX)
 	}
 
-	// Position details on the right side
-	for _, detail := range details {
-		pdf.SetXY(15, getY+30)
-		pdf.SetFont("Arial", "", 10)
-		pdf.SetTextColor(107, 114, 128)
-		pdf.Cell(60, 6, detail.label)
+	columnPersentage := []int{50, 50}
 
-		pdf.SetXY(100, getY+30)
+	if len(block.ColumnStyleOverrides) > 0 {
+		for _, colStyle := range block.ColumnStyleOverrides {
+			switch colStyle.ColIndex {
+			case 0:
+				columnPersentage[0] = int(colStyle.Width * 100)
+			case 1:
+				columnPersentage[1] = int(colStyle.Width * 100)
+			}
+		}
+	}
+
+	// Calculate column widths based on percentage
+	totalWidth := paper.RectSetup.InnerW - (paper.RectSetup.InnerW * block.StartFrom)
+	colWidths := []float64{
+		(totalWidth * float64(columnPersentage[0])) / 100,
+		(totalWidth * float64(columnPersentage[1])) / 100,
+	}
+
+	/*
+	 * Loop through each field and render key-value pairs in two columns.
+	 * Pair always have 2 columns. So it's okay to hard code the column
+	 * override variable.
+	 */
+	for _, field := range block.Fields {
+		startX, startY := pdf.GetX(), pdf.GetY()
+
+		if field.IsTotal {
+			pdf.Ln(1)
+			drawDashedLine(pdf, startX, pdf.GetY(), startX+colWidths[0]+colWidths[1], pdf.GetY())
+
+			pdf.SetFont("BRIDigital", "B", 10)
+			pdf.SetTextColor(0, 0, 0)
+			pdf.SetXY(startX, startY)
+			pdf.CellFormat(colWidths[0], 10, fmt.Sprintf("%v", field.Key), "", 0, "L", false, 0, "")
+			// Draw Value
+			pdf.SetXY(startX+colWidths[0], startY)
+			pdf.CellFormat(colWidths[1], 10, fmt.Sprintf("%v", field.Value), "", 0, "R", false, 0, "")
+			pdf.Ln(7)
+
+			continue
+		}
+
+		// Now we can draw the key and value in their respective columns. Loop
+		// through each column.
+		pdf.SetFont("BRIDigital-Light", "", 10)
+		pdf.SetTextColor(107, 104, 128)
+
+		// Draw Key
+		pdf.SetXY(startX, startY)
+		pdf.CellFormat(colWidths[0], 7, fmt.Sprintf("%v", field.Key), "", 0, "L", false, 0, "")
+		// Draw Value
+		pdf.SetXY(startX+colWidths[0], startY)
 		pdf.SetTextColor(0, 0, 0)
-		pdf.CellFormat(30, 6, detail.value, "", 0, "L", false, 0, "")
+		if block.Title == "Rincian Transaksi" {
+			pdf.CellFormat(colWidths[1], 7, fmt.Sprintf("%v", field.Value), "", 0, "R", false, 0, "")
+		} else {
+			pdf.CellFormat(colWidths[1], 7, fmt.Sprintf("%v", field.Value), "", 0, "L", false, 0, "")
+		}
+		pdf.Ln(7)
 
-		getY += 8
+		// Set X back to left margin for next row
+		if block.StartFrom > 0 {
+			pdf.SetX(paper.RectSetup.InnerX + (paper.RectSetup.InnerW * block.StartFrom))
+		} else {
+			pdf.SetX(paper.RectSetup.InnerX)
+		}
 	}
 
-	pdf.Ln(10)
-	pdf.SetX(15)
-	pdf.SetFillColor(235, 244, 245) // Warna background
-	pdf.SetTextColor(0, 0, 0)       // Text putih agar kontras
+	// Set Y to current Y + gap for the end of the block
+	pdf.SetY(pdf.GetY() + 4)
+}
 
-	pdf.CellFormat(pageW-30, 12, "Informasi Transaksi", "0", 0, "L", true, 0, "")
-
-	pdf.Ln(10)
-
-	// Details list
-	transactionInformation := []struct {
-		label string
-		value string
-	}{
-		{"Status SO", "Release"},
-		{"Nomor SO", "4000012322"},
-		{"ID Aplikasi", "250214024675"},
-		{"Nomor Perjanjian Penjadwalan", "352424411"},
-		{"Sumber Dana", "Khris - Khrisna Joh - PT. BANK RAKYAT INDONESIA (PERSERO) TBK - BRINIDJA 1001******890"},
-		{"Organisasi Penjualan", "007-C&T LPG Retail"},
-		{"Grup Produk", "001-LPG/BBG"},
-		{"Tujuan Pengiriman ", "100123 - PT. Raya Jaya Mulya"},
-		{"Pembeli", "966787 - PT. Makmur Sentosa"},
-		{"Depo", "2150 - SPBE Wanantara D. Satria"},
-		{"Pembayar", "966787 - PT. Makmur Sentosa"},
-	}
-
-	// Position details on the right side
-	for _, transaction := range transactionInformation {
-		pdf.SetXY(15, getY+50)
-		pdf.SetFont("Arial", "", 10)
-		pdf.SetTextColor(107, 114, 128)
-		pdf.Cell(60, 6, transaction.label)
-
-		pdf.SetXY(100, getY+50)
-		pdf.SetTextColor(0, 0, 0)
-		pdf.CellFormat(30, 6, transaction.value, "", 0, "L", false, 0, "")
-
-		getY += 8
-	}
-
-	pdf.Ln(10)
-	pdf.SetX(15)
-	pdf.SetFillColor(235, 244, 245) // Warna background
-	pdf.SetTextColor(0, 0, 0)       // Text putih agar kontras
-
-	pdf.CellFormat(pageW-30, 12, "Rincian Transaksi", "0", 0, "L", true, 0, "")
-
-	pdf.Ln(10)
-
-	// Details list
-	detailTransaction := []struct {
-		label string
-		value string
-	}{
-		{"Nilai Bersih", "IDR 16.000.000,00"},
-		{"Pajak PPN", "IDR 2.086.000,00"},
-		{"Pajak PBBKB", "IDR 0,00"},
-		{"Pajak PPH", "IDR 0,00"},
-		{"Nilai Kotor", "IDR 18.068.000,00"},
-		{"Nilai Debet/Kredit", "IDR 1.000.000,00"},
-		{"Biaya Admin", "IDR 2.000,00"},
-	}
-
-	// Position details on the right side
-	for _, detail := range detailTransaction {
-		pdf.SetXY(100, getY+70)
-		pdf.SetFont("Arial", "", 10)
-		pdf.SetTextColor(107, 114, 128)
-		pdf.Cell(60, 6, detail.label)
-
-		pdf.SetXY(pageW-50, getY+70)
-		pdf.SetTextColor(0, 0, 0)
-		pdf.CellFormat(30, 6, detail.value, "", 0, "R", false, 0, "")
-
-		getY += 8
-	}
-
-	// Dotted line
-	drawDashedLine(pdf, 100, getY+75, pageW-16, getY+75)
-	getY += 10
-
-	// Total Payment
-	pdf.SetXY(100, getY+70)
-	pdf.SetFont("Arial", "B", 10)
-	pdf.SetTextColor(107, 114, 128)
-	pdf.Cell(60, 6, "Total Pembayaran")
-
-	pdf.SetXY(pageW-50, getY+70)
+/*
+ * Draw table with headers and rows where the top left, top right,
+ * bottom left, bottom right corners are rounded. Make sure that if
+ * the table is too long, it will break into multiple pages while
+ * and recreate the header on the new page.
+ */
+func drawBlockTable(pdf *gofpdf.Fpdf, paper Paper, block Block) {
+	pdf.SetFont("BRIDigital", "B", 10)
 	pdf.SetTextColor(0, 0, 0)
-	pdf.Cell(30, 6, "IDR 17.070.000,00")
+	borderRadius := 3.0
 
-	pdf.Ln(10)
-	pdf.SetX(15)
-	pdf.SetFillColor(235, 244, 245) // Warna background
-	pdf.SetTextColor(0, 0, 0)       // Text putih agar kontras
+	// Calculate available height on current page
+	bottomMargin := 0.0 // Adjust as needed
 
-	pdf.CellFormat(pageW-30, 12, "Detail Produk", "0", 0, "L", true, 0, "")
+	// Draw header for first page
+	drawTableHeader(pdf, paper, block, false)
 
-	pdf.Ln(15)
+	for rowIdx, tableRow := range block.TableData.Rows {
+		// Skip header row (index 0) since we already drew it
+		if rowIdx == 0 {
+			continue
+		}
 
-	products := []struct {
-		material    string
-		description string
-		trip        string
-		qty         string
-		uom         string
-		transporter string
-		sendDate    string
-	}{
-		{"A040900002", "ADV 0001 DRUM 220 KG", "51", "12", "B03", "13bBAHBD738847Y", "23/12/2025"},
-		{"A040900002", "ADV 0001 DRUM 220 KG", "51", "12", "B03", "13bBAHBD738847Y", "23/12/2025"},
-		{"A040900002", "ADV 0001 DRUM 220 KG", "51", "12", "B03", "13bBAHBD738847Y", "23/12/2025"},
-		{"A040900002", "ADV 0001 DRUM 220 KG", "51", "12", "B03", "13bBAHBD738847Y", "23/12/2025"},
-		// {"A040900002", "ADV 0001 DRUM 220 KG", "51", "12", "B03", "13bBAHBD738847Y", "23/12/2025"},
-		// {"A040900002", "ADV 0001 DRUM 220 KG", "51", "12", "B03", "13bBAHBD738847Y", "23/12/2025"},
-		// {"A040900002", "ADV 0001 DRUM 220 KG", "51", "12", "B03", "13bBAHBD738847Y", "23/12/2025"},
-		// {"A040900002", "ADV 0001 DRUM 220 KG", "51", "12", "B03", "13bBAHBD738847Y", "23/12/2025"},
-		// {"A040900002", "ADV 0001 DRUM 220 KG", "51", "12", "B03", "13bBAHBD738847Y", "23/12/2025"},
+		// Calculate row height
+		rowHeight := calculateRowHeight(pdf, tableRow, block, paper)
+
+		// Check if we need a new page
+		if pdf.GetY()+rowHeight > paper.RectSetup.InnerH-bottomMargin {
+			pdf.AddPage()
+			drawTableHeader(pdf, paper, block, true)
+		}
+
+		// Draw the row
+		drawTableRow(pdf, paper, block, tableRow, rowIdx, len(block.TableData.Rows), rowHeight, borderRadius)
+	}
+}
+
+// Helper function to calculate row height
+func calculateRowHeight(pdf *gofpdf.Fpdf, row []string, block Block, paper Paper) float64 {
+	_, lineHt := pdf.GetFontSize()
+	maxHeight := lineHt + 4 // Minimum height
+
+	for colIdx, txt := range row {
+		width := paper.RectSetup.InnerW * block.TableData.ColSize[colIdx]
+		lines := pdf.SplitLines([]byte(txt), width)
+		cellHeight := float64(len(lines))*(lineHt+2.0) + 4.0
+		if cellHeight > maxHeight {
+			maxHeight = cellHeight
+		}
 	}
 
-	// Table header
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetX(15)
-	pdf.SetFillColor(240, 243, 243)
+	return maxHeight
+}
 
-	pdf.CellFormat(40, 8, "Material", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(80, 8, "Deskripsi Material", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(20, 8, "Trip", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(20, 8, "Qty", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(20, 8, "UOM", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(40, 8, "Transporter", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(45, 8, "Tgl Kirim", "1", 0, "C", true, 0, "")
-	pdf.Ln(8)
+// Helper function to draw a single table row
+func drawTableRow(pdf *gofpdf.Fpdf, paper Paper, block Block, tableRow []string, rowIdx, totalRows int, height, borderRadius float64) {
+	pdf.SetX(paper.RectSetup.InnerX)
 
-	// Table rows
-	for _, prod := range products {
-		pdf.SetX(15)
-		pdf.CellFormat(40, 8, prod.material, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(80, 8, prod.description, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(20, 8, prod.trip, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(20, 8, prod.qty, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(20, 8, prod.uom, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(40, 8, prod.transporter, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(45, 8, prod.sendDate, "1", 0, "C", false, 0, "")
-		pdf.Ln(8)
+	startX, startY := pdf.GetX(), pdf.GetY()
+	x := paper.RectSetup.InnerX
+
+	for colIdx, txt := range tableRow {
+		width := paper.RectSetup.InnerW * block.TableData.ColSize[colIdx]
+
+		// Determine border style based on position
+		if rowIdx == totalRows-1 { // Last row
+			if colIdx == 0 {
+				pdf.RoundedRect(x, startY, width, height, borderRadius, "4", "D")
+			} else if colIdx == len(tableRow)-1 {
+				pdf.RoundedRect(x, startY, width, height, borderRadius, "3", "D")
+			} else {
+				pdf.Rect(x, startY, width, height, "D")
+			}
+		} else { // Middle rows
+			pdf.Rect(x, startY, width, height, "D")
+		}
+
+		// Draw text
+		fontSize, _ := pdf.GetFontSize()
+		pdf.MultiCell(width, fontSize+2.0, txt, "", "L", false)
+		x += width
+		pdf.SetXY(x, startY)
 	}
 
-	pdf.SetX(15)
-	pdf.CellFormat(40, 8, "Total", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(225, 8, "128", "1", 0, "C", false, 0, "")
+	// Move to next row position
+	pdf.SetXY(startX, startY+height)
+}
 
-	pdf.Ln(10)
+// Updated header function with page break awareness
+func drawTableHeader(pdf *gofpdf.Fpdf, paper Paper, block Block, isNewTab bool) {
+	// Set position after adding new page
+	if isNewTab {
+		pdf.SetY(paper.RectSetup.InnerY)
+	}
 
+	pdf.SetFont("BRIDigital", "B", 10)
+	pdf.SetTextColor(0, 0, 0)
+	pdf.SetFillColor(249, 249, 249)
+	borderRadius := 3.0
+
+	startX, startY := pdf.GetX(), pdf.GetY()
+	x := paper.RectSetup.InnerX
+
+	// Calculate header height (find the tallest cell)
+	headerHeight := 10.0
+	_, lineHt := pdf.GetFontSize()
+	for col, txt := range block.TableData.Rows[0] {
+		width := paper.RectSetup.InnerW * block.TableData.ColSize[col]
+		lines := pdf.SplitLines([]byte(txt), width)
+		cellHeight := float64(len(lines))*(lineHt+2.0) + 4.0
+		if cellHeight > headerHeight {
+			headerHeight = cellHeight
+		}
+	}
+
+	for col, txt := range block.TableData.Rows[0] {
+		width := paper.RectSetup.InnerW * block.TableData.ColSize[col]
+
+		// Draw rounded borders for header
+		if col == 0 {
+			pdf.RoundedRect(x, startY, width, headerHeight, borderRadius, "1", "FD")
+		} else if col == len(block.TableData.Rows[0])-1 {
+			pdf.RoundedRect(x, startY, width, headerHeight, borderRadius, "2", "FD")
+		} else {
+			pdf.RoundedRect(x, startY, width, headerHeight, borderRadius, "", "FD")
+		}
+
+		// Draw header text
+		pdf.MultiCell(width, lineHt+2.0, txt, "", "AC", false)
+		x += width
+		pdf.SetXY(x, startY)
+	}
+
+	// Move to position for first data row
+	pdf.SetXY(startX, startY+headerHeight)
+}
+
+func sum(arr []float64) float64 {
+	total := 0.0
+	for _, v := range arr {
+		total += v
+	}
+	return total
+}
+
+func GetPaperA4() Paper {
+	var paper = Paper{
+		PaperSize: PaperSize{
+			Width:  210,
+			Height: 297,
+		},
+		MarginSetup: MarginSetup{
+			XMargin: 7.9375,
+			YMargin: 7.9375,
+		},
+		TransformSetup: TransformSetup{
+			X: struct {
+				A float64
+				B float64
+			}{A: 7.9375, B: 30},
+			Y: struct {
+				A float64
+				B float64
+			}{A: 15, B: 10.7},
+			TextX: struct {
+				A float64
+				B float64
+			}{A: 7.9375, B: 30},
+			TextY: struct {
+				A float64
+				B float64
+			}{A: 15, B: 10.7},
+			Angle: 30,
+			I: struct {
+				Min float64
+				Max float64
+			}{
+				Min: 0.04,
+				Max: 10,
+			},
+			J: struct {
+				Min float64
+				Max float64
+			}{
+				Min: 0.9,
+				Max: 26.75,
+			},
+		},
+		LineHt: 5.5,
+		TotalPaymentFont: FontSize{
+			ValueFontSize:  17,
+			HeaderFontSize: 17,
+		},
+		ValueFont: FontSize{
+			ValueFontSize:  15,
+			HeaderFontSize: 15,
+		},
+		FooterSetup: FooterSetup{
+			Y:           -16.5,
+			RectHeight:  4.5, // Green Rect
+			WordSpacing: 1,
+			FontSize:    10,
+		},
+		TransactionTextSetup: TransactionTextSetup{
+			FontSize:   15,
+			UpperSpace: 10,
+			LowerSpace: 25.4,
+		},
+		BottomSetup: BottomSetup{
+			BottomLimit:      45,
+			BottomLimitMinus: 40,
+			FontSize:         15,
+		},
+		ValueCellSetup: CellSetup{
+			W1:         10,
+			W2:         1,
+			WMultiCell: 0,
+			H2:         5.5,
+			H1:         5.5,
+			HMultiCell: 5.5,
+			Ln1:        2,
+			Ln2:        2,
+		},
+		HeaderSetup: HeaderSetup{
+			Space1:   1.5,
+			Space2:   13.2,
+			W:        0,
+			H:        7,
+			X:        30.1,
+			Y:        5,
+			FontSize: 12,
+		},
+	}
+
+	yAfterHeaderImage := 15.9375
+	paper.RectSetup = RectSetup{
+		X: paper.MarginSetup.XMargin,
+		Y: paper.MarginSetup.YMargin + yAfterHeaderImage,
+		W: paper.PaperSize.Width - (paper.MarginSetup.XMargin * 2),
+		H: paper.PaperSize.Height - (paper.FooterSetup.RectHeight + paper.MarginSetup.YMargin + yAfterHeaderImage + paper.MarginSetup.YMargin*2),
+
+		/* Start drawing from here */
+		InnerX: paper.MarginSetup.XMargin + (paper.MarginSetup.XMargin / 2),
+		InnerY: paper.MarginSetup.YMargin + yAfterHeaderImage + (paper.MarginSetup.YMargin / 2),
+		InnerW: paper.PaperSize.Width - (paper.MarginSetup.XMargin * 2) - (paper.MarginSetup.XMargin / 2 * 2),
+		InnerH: paper.PaperSize.Height - (paper.FooterSetup.RectHeight + paper.MarginSetup.YMargin + yAfterHeaderImage + paper.MarginSetup.YMargin*2),
+	}
+
+	/* Success Icon */
+	paper.IconSetup = IconSetup{
+		X: paper.RectSetup.InnerX,
+		Y: paper.RectSetup.InnerY,
+		W: 14,
+		H: 14,
+	}
+
+	return paper
 }
