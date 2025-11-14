@@ -444,6 +444,8 @@ func (s *PDFHandler) GenerateReceipt(transactionId string, status string, data [
 		drawBackgroundRounded(pdf, paper)
 	})
 
+	pdf.AliasNbPages("{nb}")
+
 	pdf.SetFooterFunc(func() {
 		currentTime := time.Now()
 		formattedTime := currentTime.Format("02/01/2006 15:04:05")
@@ -451,7 +453,7 @@ func (s *PDFHandler) GenerateReceipt(transactionId string, status string, data [
 		pdf.SetY(paper.FooterSetup.Y)
 		pdf.SetFont("BRIDigital", "", paper.FooterSetup.FontSize)
 		pdf.SetTextColor(128, 128, 128)
-		pdf.CellFormat(0, 10, fmt.Sprintf("%s - Halaman %d / %d", formattedTime, pdf.PageNo(), pdf.PageCount()), "", 0, "R", false, 0, "")
+		pdf.CellFormat(0, 10, fmt.Sprintf("%s - Halaman %d/{nb}", formattedTime, pdf.PageNo()), "", 0, "R", false, 0, "")
 
 		pdf.Ln(5)
 		pdf.SetFillColor(16, 47, 50)
