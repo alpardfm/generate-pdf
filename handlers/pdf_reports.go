@@ -93,7 +93,7 @@ func (s *PDFHandler) GenerateReport(data interface{}) (*gofpdf.Fpdf, error) {
 	pdf.SetHeaderFunc(
 		func() {
 			s.addHeader(pdf)
-			s.addWatermark(pdf)
+			// s.addWatermark(pdf)
 		})
 	pdf.AddPageFormat("P", gofpdf.SizeType{Wd: 297, Ht: 420})
 	// Add header
@@ -145,11 +145,13 @@ func (s *PDFHandler) GenerateReport(data interface{}) (*gofpdf.Fpdf, error) {
 	return pdf, nil
 }
 
-func (s *PDFHandler) addWatermark(pdf *gofpdf.Fpdf) {
-	pdf.ImageOptions("./assets/images/newwatermark3.png", 0, 0, 297, 420, false, gofpdf.ImageOptions{
+func (s *PDFHandler) addWatermark(pdf *gofpdf.Fpdf, paper Paper) {
+	pdf.SetAlpha(0.5, "Normal")
+	pdf.ImageOptions("./assets/images/newwatermark3.png", paper.RectSetup.X, paper.RectSetup.Y, paper.RectSetup.W, paper.RectSetup.H, false, gofpdf.ImageOptions{
 		ReadDpi:   false,
 		ImageType: "", // biarkan kosong agar otomatis deteksi dari ekstensi (jpg, png, dll)
 	}, 0, "")
+	pdf.SetAlpha(1.0, "Normal")
 }
 
 func setBackgroundColor(pdf *gofpdf.Fpdf, x, y, width, height float64, r, g, b int) {

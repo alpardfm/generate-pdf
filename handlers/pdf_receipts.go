@@ -304,7 +304,7 @@ func (h *PDFHandler) GenerateDownloadReceiptPDF(w http.ResponseWriter, r *http.R
 		Type:      BLOCK_TYPE_TABLE,
 		TableData: TableData{
 			Rows: [][]string{
-				{"Material", "Deskripsi", "Trip", "Qty", "UoM", "Transporter", "Tanggal Kirim"},
+				{"Material", "Deskripsi Material", "Trip", "Qty", "UoM", "Transporter", "Tanggal Kirim"},
 				{"A040900001", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
 				{"A040900002", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
 				{"A040900003", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
@@ -441,7 +441,10 @@ func (s *PDFHandler) GenerateReceipt(transactionId string, status string, data [
 			ReadDpi:   false,
 			ImageType: "",
 		}, 0, "")
+
 		drawBackgroundRounded(pdf, paper)
+
+		s.addWatermark(pdf, paper)
 	})
 
 	pdf.SetFooterFunc(func() {
@@ -460,9 +463,27 @@ func (s *PDFHandler) GenerateReceipt(transactionId string, status string, data [
 	})
 
 	pdf.AddPage()
-	drawBackgroundRounded(pdf, paper)
 	drawTransactionDetails(pdf, paper, transactionId)
 	drawContentsReceipt(pdf, paper, data)
+
+	pdf.CellFormat(paper.RectSetup.InnerX, 12, "Dokumen ini merupakan bukti transaksi yang sah dan dicetak otomatis oleh sistem.", "", 0, "L", false, 0, "")
+
+	pdf.SetFont("BRIDigital", "B", 9)
+
+	fontSize, _ := pdf.GetFontSize()
+	footerContainerHeight := fontSize * 2
+
+	pdf.SetY((paper.RectSetup.Y + paper.RectSetup.H) - footerContainerHeight - 4)
+
+	pdf.SetAlpha(0.16, "Normal")
+	pdf.SetFillColor(61, 134, 143)
+	pdf.RoundedRect(paper.RectSetup.InnerX, pdf.GetY(), paper.RectSetup.InnerW, footerContainerHeight, 3, "1234", "F")
+	pdf.SetAlpha(1, "Normal")
+
+	pdf.SetTextColor(107, 104, 128)
+
+	pdf.SetX(paper.RectSetup.InnerX)
+	pdf.MultiCell(paper.RectSetup.InnerW, fontSize, "Dokumen ini merupakan bukti transaksi yang sah dan dicetak otomatis oleh sistem. Terima kasih telah bertransaksi menggunakan Qlola BRI, bila menemui kendala silakan hubungi kami di 500001 atau qlola@bri.co.id", "", "C", false)
 
 	return pdf, nil
 }
@@ -493,9 +514,9 @@ func drawTransactionDetails(pdf *gofpdf.Fpdf, paper Paper, transactionId string)
 
 	pdf.SetFont("BRIDigital", "B", 10)
 	strWidth := pdf.GetStringWidth("DO Pertamina")
-	pdf.Text(paper.RectSetup.InnerW-strWidth, paper.RectSetup.InnerY+10, "DO Pertamina")
+	pdf.Text((paper.RectSetup.InnerW+paper.RectSetup.InnerX)-strWidth, paper.RectSetup.InnerY+10, "DO Pertamina")
 
-	drawDashedLine(pdf, paper.RectSetup.InnerX, containerBottomY-2, paper.RectSetup.InnerW, containerBottomY-2)
+	drawDashedLine(pdf, paper.RectSetup.InnerX, containerBottomY-2, (paper.RectSetup.InnerW + paper.RectSetup.InnerX), containerBottomY-2)
 }
 
 func drawDashedLine(pdf *gofpdf.Fpdf, x1, y1, x2, y2 float64) {
@@ -592,7 +613,7 @@ func drawBlockRows(pdf *gofpdf.Fpdf, paper Paper, block Block) {
 			pdf.SetXY(startX, startY)
 			pdf.CellFormat(colWidths[0], 10, fmt.Sprintf("%v", field.Key), "", 0, "L", false, 0, "")
 			// Draw Value
-			pdf.SetXY(startX+colWidths[0], startY)
+			pdf.SetXY(startX+colWidths[0], startY+1)
 			pdf.CellFormat(colWidths[1], 10, fmt.Sprintf("%v", field.Value), "", 0, "R", false, 0, "")
 			pdf.Ln(7)
 
@@ -709,9 +730,15 @@ func drawTableRow(pdf *gofpdf.Fpdf, paper Paper, block Block, tableRow []string,
 			pdf.Rect(x, startY, width, height, "D")
 		}
 
+		padding := 2.0
+
+		innerX := x + padding
+		innerW := width - padding*2
+		pdf.SetXY(innerX, pdf.GetY()+padding)
+
 		// Draw text
-		fontSize, _ := pdf.GetFontSize()
-		pdf.MultiCell(width, fontSize+2.0, txt, "", "L", false)
+		_, unitSize := pdf.GetFontSize()
+		pdf.MultiCell(innerW, unitSize+2.0, txt, "", "L", false)
 		x += width
 		pdf.SetXY(x, startY)
 	}
@@ -732,6 +759,7 @@ func drawTableHeader(pdf *gofpdf.Fpdf, paper Paper, block Block, isNewTab bool) 
 	pdf.SetFillColor(249, 249, 249)
 	borderRadius := 3.0
 
+	pdf.SetX(paper.RectSetup.InnerX)
 	startX, startY := pdf.GetX(), pdf.GetY()
 	x := paper.RectSetup.InnerX
 
@@ -756,25 +784,23 @@ func drawTableHeader(pdf *gofpdf.Fpdf, paper Paper, block Block, isNewTab bool) 
 		} else if col == len(block.TableData.Rows[0])-1 {
 			pdf.RoundedRect(x, startY, width, headerHeight, borderRadius, "2", "FD")
 		} else {
-			pdf.RoundedRect(x, startY, width, headerHeight, borderRadius, "", "FD")
+			pdf.RoundedRect(x, startY, width, headerHeight, borderRadius, "TB", "FD")
 		}
 
+		padding := 2.0
+
+		innerX := x + padding
+		innerW := width - padding*2
+		pdf.SetXY(innerX, pdf.GetY())
+
 		// Draw header text
-		pdf.MultiCell(width, lineHt+2.0, txt, "", "AC", false)
+		pdf.MultiCell(innerW, lineHt+2.0, txt, "", "AL", false)
 		x += width
 		pdf.SetXY(x, startY)
 	}
 
 	// Move to position for first data row
 	pdf.SetXY(startX, startY+headerHeight)
-}
-
-func sum(arr []float64) float64 {
-	total := 0.0
-	for _, v := range arr {
-		total += v
-	}
-	return total
 }
 
 func GetPaperA4() Paper {
