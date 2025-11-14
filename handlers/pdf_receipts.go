@@ -310,8 +310,10 @@ func (h *PDFHandler) GenerateDownloadReceiptPDF(w http.ResponseWriter, r *http.R
 				{"A040900003", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
 				{"A040900004", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
 				{"A040900005", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"Total", "", "", "5000", "", "", ""},
 			},
-			ColSize: []float64{0.15, 0.20, 0.10, 0.10, 0.10, 0.15, 0.20},
+			ColSize:     []float64{0.15, 0.20, 0.10, 0.10, 0.10, 0.15, 0.20},
+			LastRowBold: true,
 		},
 	})
 
@@ -391,6 +393,7 @@ type TableData struct {
 	Rows    [][]string
 	ColSize []float64 // Column size in percentage (0.0 - 1.0). 1.0 = 100% width
 	// of table
+	LastRowBold bool
 }
 
 /*
@@ -738,6 +741,13 @@ func drawTableRow(pdf *gofpdf.Fpdf, paper Paper, block Block, tableRow []string,
 
 		// Draw text
 		_, unitSize := pdf.GetFontSize()
+
+		if block.TableData.LastRowBold && rowIdx == totalRows-1 {
+			pdf.SetFont("BRIDigital", "B", 10)
+		} else {
+			pdf.SetFont("BRIDigital", "", 10)
+		}
+
 		pdf.MultiCell(innerW, unitSize+2.0, txt, "", "L", false)
 		x += width
 		pdf.SetXY(x, startY)
