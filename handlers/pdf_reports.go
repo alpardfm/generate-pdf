@@ -2,9 +2,7 @@ package handlers
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"generatePDF/models"
 	"net/http"
 	"os"
 	"time"
@@ -12,53 +10,167 @@ import (
 	"github.com/jung-kurt/gofpdf"
 )
 
-func (h *PDFHandler) GeneratePDF(w http.ResponseWriter, r *http.Request) {
-	// Parse request body
-	var req models.GeneratePDFRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+type TransactionInfo struct {
+	TransactionId    string
+	Status           string
+	DebitAccount     string
+	DebitAccountName string
+	ModuleType       string
+	TotalPayment     string
+	Message          string
+}
+
+func (h *PDFHandler) GeneratePDF(w http.ResponseWriter, req *http.Request) {
+	trxInfo := TransactionInfo{
+		TransactionId:    "DOP1234567890",
+		Status:           "Gagal",
+		DebitAccount:     "00123456789",
+		DebitAccountName: "Khrisna Joh",
+		ModuleType:       "Product Allocation",
+		TotalPayment:     "IDR 17.070.000,00",
+		Message:          "You are a fucking disgrace",
 	}
 
-	// Validate
-	if req.ProcessID == "" || req.TransactionID == "" {
-		http.Error(w, "ProcessID and TransactionID are required", http.StatusBadRequest)
-		return
-	}
+	data := []Block{}
 
-	// Generate PDF
-	// pdfBytes, err := h.convertPdf(&req)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
+	data = append(data, Block{
+		Title:         "Rincian Transaksi",
+		Type:          BLOCK_TYPE_ROWS,
+		ShowTitle:     true,
+		IsTitleInside: true,
+		Fields: []Field{
+			{
+				Key:   "Nilai Bersih",
+				Value: "IDR 16.000.000,00",
+			},
+			{
+				Key:   "Pajak PPN",
+				Value: "IDR 2.086.000,00",
+			},
+			{
+				Key:   "Pajak PBBKB",
+				Value: "IDR 0,00",
+			},
+			{
+				Key:   "Pajak PPH",
+				Value: "IDR 0,00",
+			},
+			{
+				Key:   "Nilai Kotor",
+				Value: "IDR 18.068.000,00",
+			},
+			{
+				Key:   "Nilai Debit atau Kredit",
+				Value: "IDR 1.000.000,00",
+			},
+			{
+				Key:   "Biaya Admin",
+				Value: "IDR 2.000,00",
+			},
+			{
+				Key:     "Total Pembayaran",
+				Value:   "IDR 18.071.000,00",
+				IsTotal: true,
+			},
+		},
+		StartFrom: 0.35,
+	})
 
-	data := map[string]interface{}{
-		"transactionId":       "DOP1234567890",
-		"status":              "Sukses",
-		"debitAccountName":    "Khrisna Joh",
-		"accountNumber":       "00123456789",
-		"moduleType":          "Product Allocation",
-		"totalPayment":        "IDR 17.070.000,00",
-		"netValue":            "IDR 16.000.000,00",
-		"ppnTax":              "IDR 2.086.000,00",
-		"pbbkbTax":            "IDR 0,00",
-		"pphTax":              "IDR 0,00",
-		"grossValue":          "IDR 18.068.000,00",
-		"debitCreditValue":    "IDR 1.000.000,00",
-		"totalAmount":         "IDR 17.068.000,00",
-		"soldToName":          "PT. Pertamina Tbk",
-		"buyer":               "PT. Perusahaan Customer",
-		"depoName":            "Depo Jakarta Utara",
-		"salesOrganization":   "SO002",
-		"productGroup":        "Bahan Bakar Minyak",
-		"distributionChannel": "Corporate Sales",
-		"payer":               "PT. Perusahaan Customer",
-	}
+	data = append(data, Block{
+		Title:         "Informasi Transaksi",
+		Type:          BLOCK_TYPE_COLS,
+		ShowTitle:     true,
+		IsTitleInside: true,
+		Fields: []Field{
+			{
+				Key:   "Nomor SO",
+				Value: "SO123456789",
+			},
+			{
+				Key:   "Status SO",
+				Value: "Release",
+			},
+			{
+				Key:   "ID Aplikasi",
+				Value: "DOP1234567890",
+			},
+			{
+				Key:   "Nomor Perjanjian Penjadwalan",
+				Value: "NP1234567890",
+			},
+			{
+				Key:   "Tujuan Pengiriman",
+				Value: "100123 - PT Klara Jaya",
+			},
+			{
+				Key:   "Pembeli",
+				Value: "123123 - PT. Contoh Pembeli",
+			},
+			{
+				Key:   "Depo",
+				Value: "2150 - SPBU Ibu Kota Negara",
+			},
+			{
+				Key:   "Organisasi Penjualan",
+				Value: "007 - C&T LPG Retail",
+			},
+			{
+				Key:   "Grup Produk",
+				Value: "LPG",
+			},
+			{
+				Key:   "Channel Distribusi",
+				Value: "LPG Retail",
+			},
+			{
+				Key:   "Pembayar",
+				Value: "1000013 - Customer SP",
+			},
+		},
+		StartFrom: 0.35,
+	})
+
+	data = append(data, Block{
+		Title:          "Detail Produk",
+		ShowTitle:      true,
+		Type:           BLOCK_TYPE_TABLE,
+		HideBackground: true,
+		TableData: TableData{
+			Rows: [][]string{
+				{"Material", "Deskripsi Material", "Trip", "Qty", "UoM", "Transporter", "Tanggal Kirim"},
+				{"A040900001", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"A040900002", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"A040900003", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"A040900004", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"A040900005", "LPG BR1 3KG", "1", "1000", "KG", "PT. Rahayu Sentosa", "05/10/2025"},
+				{"Total", "", "", "5000", "", "", ""},
+			},
+			ColSize:     []float64{0.15, 0.20, 0.10, 0.10, 0.10, 0.15, 0.20},
+			LastRowBold: true,
+		},
+	})
+
+	data = append(data, Block{
+		Title:          "Log Aktivitas",
+		ShowTitle:      true,
+		Type:           BLOCK_TYPE_TABLE,
+		HideBackground: true,
+		TableData: TableData{
+			Rows: [][]string{
+				{"No", "Tanggal", "Nama", "Peran", "Aksi", "Deskripsi"},
+				{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
+				{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Approve", ""},
+				{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
+				{"4", "30/01/2025 10:00:00", "Arya", "Signer", "Approve", ""},
+			},
+			ColSize:     []float64{0.07, 0.25, 0.13, 0.15, 0.2, 0.2},
+			LastRowBold: true,
+		},
+	})
 
 	var buf bytes.Buffer
 
-	pdf, err := h.GenerateReport(data)
+	pdf, err := h.GenerateReport(trxInfo, data)
 	if err != nil {
 		fmt.Println("Error generating report:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -82,67 +194,302 @@ func (h *PDFHandler) GeneratePDF(w http.ResponseWriter, r *http.Request) {
 	// Write PDF binary langsung ke response
 	w.Write(buf.Bytes())
 }
-func (s *PDFHandler) GenerateReport(data interface{}) (*gofpdf.Fpdf, error) {
-	pdf := gofpdf.New("P", "mm", "A4", "assets/font")
-	pdf.SetAutoPageBreak(true, 25)
 
+func (s *PDFHandler) GenerateReport(trxInfo TransactionInfo, data []Block) (*gofpdf.Fpdf, error) {
+	var paper Paper = GetPaperA4()
+
+	pdf := gofpdf.New("P", "mm", "A4", "assets/font")
+
+	pdf.AddUTF8Font("BRIDigital-Light", "", "BRIDigitalText-Light.ttf")
 	pdf.AddFont("BRIDigital", "", "BRIDigitalText-Regular.json")
 	pdf.AddFont("BRIDigital", "B", "BRIDigitalText-SemiBold.json")
 	pdf.AddFont("BRIDigitalLogo", "B", "BRIDigitalText-SemiBold.json")
 
-	pdf.SetHeaderFunc(
-		func() {
-			s.addHeader(pdf)
-			// s.addWatermark(pdf)
-		})
-	pdf.AddPageFormat("P", gofpdf.SizeType{Wd: 297, Ht: 420})
-	// Add header
-	// Add watermark background
+	pdf.SetMargins(paper.MarginSetup.XMargin, paper.MarginSetup.YMargin, paper.MarginSetup.XMargin)
+	pdf.SetAutoPageBreak(true, 10)
 
-	fontSize := 12.0
-	fontName := "BRIDigital"
-	pageW, _ := pdf.GetPageSize()
-	// heightRow := 10.0
-	// heightHeader := 15.0
-	pdf.SetFont(fontName, "", fontSize)
-	// paddingDetailTrx := 20.0
+	pdf.SetHeaderFunc(func() {
+		pdf.ImageOptions("./assets/images/report-header.png", 0, 0, 210, 0, false, gofpdf.ImageOptions{
+			ReadDpi:   false,
+			ImageType: "",
+		}, 0, "")
 
-	pdf.SetFont(fontName, "B", 16)
+		if pdf.PageCount() > 1 {
+			pdf.SetFont("BRIDigital", "", 10)
+			_, lineHt := pdf.GetFontSize()
+			pdf.Text(paper.RectSetup.InnerX, paper.RectSetup.InnerY, fmt.Sprintf("Laporan Transaksi - %s", trxInfo.TransactionId))
+			pdf.SetY(paper.RectSetup.InnerY + lineHt + 8.0)
+		}
 
-	pdf.AliasNbPages("{nb}")
-
-	pdf.SetFooterFunc(func() {
-		pdf.SetY(-19)
-		pdf.Ln(2)
-		pdf.Line(10, pdf.GetY(), pageW-8, pdf.GetY())
-		pdf.Ln(1)
-		pdf.SetFont(fontName, "", 11)
-
-		// Simpan posisi awal
-		// startX := pdf.GetX()
-		startY := pdf.GetY()
-
-		// Text kiri
-		pdf.MultiCell(pageW-100, 7, "Terima kasih telah bertransaksi menggunakan Qlola BRI, bila menemui kendala silakan hubungi kami di 1500001 atau qlola@bri.co.id", "", "L", false)
-
-		// Kembali ke posisi awal untuk bagian kanan
-		pdf.SetY(startY)
-		pdf.SetX(225)
-
-		currentTime := time.Now()
-		formattedTime := currentTime.Format("02/01/2006 15:04:05")
-
-		// Text kanan - juga pakai MultiCell untuk alignment yang konsisten
-		pdf.MultiCell(pageW/2, 7, fmt.Sprintf("%v - Halaman %d/{nb}", formattedTime, pdf.PageNo()), "", "L", false)
+		s.addWatermark(pdf, paper)
 	})
 
-	// Add content
-	s.addContent(pdf, data)
+	pdf.SetFooterFunc(func() {
+		footerContainerHeight := paper.FooterSetup.RectHeight
+		spaceX := 16.0
+		colSize := []float64{0.7, 0.3}
+		pdf.AliasNbPages("{nb}")
 
-	// // Add footer
-	// s.addFooter(pdf)
+		x := paper.RectSetup.X + 2.0
+		y := paper.RectSetup.H + paper.RectSetup.Y - footerContainerHeight
+
+		// Left side
+		pdf.SetXY(x, y)
+		pdf.SetFont("BRIDigital", "", 10)
+
+		_, lineHeight := pdf.GetFontSize()
+		lineHeight *= 2
+		pdf.MultiCell(paper.RectSetup.W*colSize[0]-spaceX, lineHeight, "Terima kasih telah bertransaksi menggunakan Qlola BRI, bila menemui kendala silakan hubungi kami di 1500001 atau qlola@bri.co.id", "", "L", false)
+
+		// Right side
+		currentTime := time.Now()
+		formattedTime := currentTime.Format("02/01/2006 15:04:05")
+		pdf.SetXY(x+paper.RectSetup.W*colSize[0]+spaceX, y+(lineHeight-1))
+		pdf.CellFormat(paper.RectSetup.W*colSize[1]-spaceX, footerContainerHeight, fmt.Sprintf("%v - Halaman %d/{nb}", formattedTime, pdf.PageNo()), "", 0, "R", false, 0, "")
+
+		pdf.Ln(5)
+		pdf.SetFillColor(16, 47, 50)
+		pdf.Rect(0, paper.PaperSize.Height-paper.FooterSetup.RectHeight, paper.PaperSize.Width, paper.FooterSetup.RectHeight, "F")
+		pdf.Ln(2)
+	})
+
+	pdf.AddPage()
+
+	lastY := drawReportHeader(pdf, paper, trxInfo)
+
+	if trxInfo.Message != "" && trxInfo.Status != "Sukses" {
+		pdf.SetX(paper.RectSetup.InnerX)
+		pdf.SetFont("BRIDigital", "", 11)
+
+		_, lineHt := pdf.GetFontSize()
+		containerYStart := lastY
+		containerHeight := lineHt*2.0 + 3.0
+
+		// x mark icon image
+		pdf.ImageOptions("./assets/images/icon-x.png", paper.RectSetup.InnerX+2.0, containerYStart+2.0, 6.0, 6.0, false, gofpdf.ImageOptions{
+			ReadDpi:   false,
+			ImageType: "",
+		}, 0, "")
+
+		pdf.SetAlpha(0.16, "Normal")
+		pdf.SetFillColor(198, 40, 40) // #c62828
+		pdf.RoundedRect(paper.RectSetup.InnerX, containerYStart, paper.RectSetup.InnerW, containerHeight, 2.0, "1234", "F")
+		pdf.SetAlpha(1.0, "Normal")
+		pdf.SetTextColor(0, 0, 0) // white
+
+		pdf.Text(paper.RectSetup.InnerX+10, containerYStart+(lineHt+3.0), trxInfo.Message)
+
+		pdf.SetTextColor(0, 0, 0) // reset to black
+		pdf.SetY(pdf.GetY() + containerHeight + (lineHt + 12.0))
+	} else {
+		pdf.SetY(pdf.GetY() + 12.0)
+	}
+
+	addThreeColumnInfo(pdf, paper, trxInfo)
+	drawContentsReport(pdf, paper, data)
 
 	return pdf, nil
+}
+
+func drawReportHeader(pdf *gofpdf.Fpdf, paper Paper, trxInfo TransactionInfo) float64 {
+	pdf.SetXY(paper.RectSetup.InnerX, paper.RectSetup.InnerY)
+
+	pdf.SetFont("BRIDigital", "B", 12)
+	_, lineHt := pdf.GetFontSize()
+
+	pdf.SetTextColor(24, 24, 24)
+	pdf.Text(pdf.GetX(), pdf.GetY(), "Laporan Transaksi")
+	pdf.SetFont("BRIDigital-Light", "", 12)
+	pdf.Text(pdf.GetX(), pdf.GetY()+lineHt+2.0, trxInfo.TransactionId)
+
+	/*
+	 * The badge total height is first column line height - 2mm padding top and
+	 * bottom and put it centered with first line text. The row height is lineHt
+	 * + 4mm (2mm top and 2mm bottom)
+	 */
+	badgeHeight := (lineHt * 2.0) + 2.0
+
+	pdf.SetFont("BRIDigital", "", 12)
+	strWidth := pdf.GetStringWidth(trxInfo.Status) + 6.0 // padding 4mm kiri kanan
+	badgePositionX := pdf.GetX() + paper.RectSetup.InnerW - strWidth
+
+	switch trxInfo.Status {
+	case "Sukses":
+		pdf.SetFillColor(210, 233, 218) // #d2e9da
+		pdf.RoundedRect(badgePositionX, pdf.GetY()-3.0, strWidth, badgeHeight, 2, "1234", "F")
+
+		pdf.SetTextColor(6, 100, 40) // #066428
+	case "Gagal":
+		pdf.SetAlpha(0.16, "Normal")
+		pdf.SetFillColor(205, 13, 19) // #cd0d13
+		pdf.RoundedRect(badgePositionX, pdf.GetY()-3.0, strWidth, badgeHeight, 2, "1234", "F")
+		pdf.SetAlpha(1, "Normal")
+
+		pdf.SetTextColor(121, 11, 15) // #790b0f
+	default:
+		pdf.SetFillColor(255, 243, 205) // #fff3cd
+	}
+
+	pdf.Text(badgePositionX+3.0, pdf.GetY()+lineHt-1.0, trxInfo.Status)
+
+	// Reset text color
+	pdf.SetTextColor(0, 0, 0)
+
+	// Return last Y position
+	return pdf.GetY() + badgeHeight + 2.0
+}
+
+func addThreeColumnInfo(pdf *gofpdf.Fpdf, paper Paper, trxInfo TransactionInfo) {
+	startY := pdf.GetY() + 8.0
+
+	drawSourceOfFunds(pdf, paper, trxInfo, startY)
+	drawTransactionType(pdf, paper, trxInfo, startY)
+	drawTotalPayment(pdf, paper, trxInfo, startY)
+}
+
+func drawContentsReport(pdf *gofpdf.Fpdf, paper Paper, data []Block) {
+	pdf.SetY(pdf.GetY() + 28.0)
+
+	// Loop through each block and render based on its type
+	rectHeight := paper.RectSetup.InnerH
+
+	for i, block := range data {
+		pdf.SetX(paper.RectSetup.InnerX)
+		pdf.SetY(pdf.GetY())
+
+		// Last attempt
+		if block.Title == "Detail Produk" {
+			pdf.AddPage()
+		}
+
+		if block.ShowTitle {
+			startX, startY := paper.RectSetup.InnerX, pdf.GetY()
+
+			if !block.IsTitleInside && !block.HideBackground {
+				// 1. Draw semi-transparent background rectangle
+				pdf.SetAlpha(0.16, "Normal")
+				pdf.SetFillColor(61, 136, 143)
+				pdf.Rect(startX, startY, paper.RectSetup.InnerW, paper.HeaderSetup.H, "F")
+				pdf.SetAlpha(1, "Normal")
+			}
+
+			// 2. Draw text on top (fully opaque)
+			pdf.SetFont("BRIDigital", "B", 11)
+			pdf.SetTextColor(0, 0, 0)
+
+			if block.IsTitleInside {
+				startY += 5.0
+			}
+
+			pdf.Text(startX, startY, block.Title)
+		}
+
+		switch block.Type {
+		case BLOCK_TYPE_ROWS:
+			drawBlockRows(pdf, paper, block)
+		case BLOCK_TYPE_TABLE:
+			drawBlockTable(pdf, paper, block)
+		case BLOCK_TYPE_COLS:
+			drawBlockCols(pdf, paper, block)
+		}
+
+		endMargin := 4.0
+		if i < len(data)-1 && pdf.GetY()+endMargin < rectHeight {
+			pdf.SetY(pdf.GetY() + endMargin)
+			pdf.Line(paper.RectSetup.InnerX, pdf.GetY(), paper.RectSetup.InnerX+paper.RectSetup.InnerW, pdf.GetY())
+			pdf.SetY(pdf.GetY() + endMargin*2.0)
+		}
+	}
+}
+
+func drawSourceOfFunds(pdf *gofpdf.Fpdf, paper Paper, data TransactionInfo, startY float64) {
+	x := paper.RectSetup.InnerX
+	y := startY
+	space := 3.0
+	offsetCell := 0.0
+	marginTop := 5.0
+	imageSize := 12.0
+	pdf.SetXY(x, y)
+
+	pdf.SetFont("BRIDigital", "B", 12)
+	pdf.Text(x+offsetCell, y, "Sumber Dana")
+
+	// BRI Logo
+	briLogo := "./assets/images/Icon.png"
+	opts := gofpdf.ImageOptions{ImageType: "", ReadDpi: false}
+	if _, err := os.Stat(briLogo); err == nil {
+		pdf.ImageOptions(briLogo, x, y+marginTop, imageSize, 0, false, opts, 0, "")
+	}
+
+	pdf.SetFont("BRIDigital", "B", 11)
+	_, fontSize := pdf.GetFontSize()
+	ascent := fontSize * 0.7 // kira-kira ascender
+
+	name := fmt.Sprintf("%s | %s", data.DebitAccount, data.DebitAccountName)
+	strLen := pdf.GetStringWidth(name)
+	rightWidth := (paper.RectSetup.InnerW / 3) - (imageSize + 4.0) // logo width + padding
+
+	if strLen > rightWidth {
+		for strLen > rightWidth {
+			name = name[:len(name)-1]
+			strLen = pdf.GetStringWidth(name + "...")
+		}
+
+		name += "..."
+	}
+
+	pdf.Text(x+imageSize+space, y+marginTop+ascent, name)
+
+	pdf.SetFont("BRIDigital", "", 11)
+	pdf.Text(x+imageSize+space, y+marginTop+ascent+fontSize+2.0, fmt.Sprintf("%s | %s", "BRI", data.DebitAccount))
+
+	// Indonesian Flag
+	indonesiaFlag := "./assets/images/Indonesia.png"
+	flagSize := 8.0
+	if _, err := os.Stat(indonesiaFlag); err == nil {
+		pdf.ImageOptions(indonesiaFlag, x+imageSize+space, y+marginTop+ascent+fontSize+4.0, flagSize, 0, false, opts, 0, "")
+	}
+
+	pdf.Text(x+imageSize+space+flagSize+2.0, y+marginTop+ascent+(fontSize*2)+4.0, "IDN")
+}
+
+func drawTransactionType(pdf *gofpdf.Fpdf, paper Paper, data TransactionInfo, startY float64) {
+	x := paper.RectSetup.InnerX + (paper.RectSetup.InnerW / 3)
+	y := startY
+	space := 3.0
+	marginTop := 5.0
+	imageSize := 12.0
+	pdf.SetXY(x, y)
+
+	pdf.SetFont("BRIDigital", "B", 12)
+	pdf.Text(x+1.0, y, "Jenis Transaksi")
+
+	// Transaction Type Logo
+	pertaminaLogo := "./assets/images/pertamina.png"
+	opts := gofpdf.ImageOptions{ImageType: "", ReadDpi: false}
+	if _, err := os.Stat(pertaminaLogo); err == nil {
+		pdf.ImageOptions(pertaminaLogo, x, y+marginTop, imageSize, 0, false, opts, 0, "")
+	}
+
+	pdf.SetFont("BRIDigital", "B", 11)
+	_, fontSize := pdf.GetFontSize()
+	ascent := fontSize * 0.7 // kira-kira ascender
+
+	pdf.Text(x+imageSize+space, y+marginTop+ascent, "DO Pertamina")
+
+	pdf.SetFont("BRIDigital", "", 11)
+	pdf.Text(x+imageSize+space, y+marginTop+ascent+fontSize+2.0, data.ModuleType)
+}
+
+func drawTotalPayment(pdf *gofpdf.Fpdf, paper Paper, data TransactionInfo, startY float64) {
+	x := paper.RectSetup.InnerX + 2*(paper.RectSetup.InnerW/3)
+	y := startY
+	pdf.SetXY(x, y)
+
+	pdf.SetFont("BRIDigital", "B", 12)
+	pdf.Text(x, y, "Total Pembayaran")
+	pdf.SetFont("BRIDigital", "B", 16)
+	pdf.Text(x, y+10.0, data.TotalPayment)
 }
 
 func (s *PDFHandler) addWatermark(pdf *gofpdf.Fpdf, paper Paper) {
@@ -152,643 +499,4 @@ func (s *PDFHandler) addWatermark(pdf *gofpdf.Fpdf, paper Paper) {
 		ImageType: "", // biarkan kosong agar otomatis deteksi dari ekstensi (jpg, png, dll)
 	}, 0, "")
 	pdf.SetAlpha(1.0, "Normal")
-}
-
-func setBackgroundColor(pdf *gofpdf.Fpdf, x, y, width, height float64, r, g, b int) {
-	// Simpan warna sebelumnya
-	r1, g1, b1 := pdf.GetFillColor()
-
-	// Set warna fill baru
-	pdf.SetFillColor(r, g, b)
-
-	// Gambar rectangle dengan warna fill
-	pdf.Rect(x, y, width, height, "F")
-
-	// Kembalikan warna semula
-	pdf.SetFillColor(r1, g1, b1)
-}
-
-func (s *PDFHandler) addHeader(pdf *gofpdf.Fpdf) {
-	pageW, _ := pdf.GetPageSize()
-
-	setBackgroundColor(pdf, 0, 0, pageW, 50, 16, 47, 50)
-	// Add logos
-	qlolaLogo := "./assets/images/qlola.png"
-	briLogo := "./assets/images/bri.png"
-
-	opts := gofpdf.ImageOptions{ImageType: "", ReadDpi: false}
-
-	// Left logo (Qlola)
-	if _, err := os.Stat(qlolaLogo); err == nil {
-		pdf.ImageOptions(qlolaLogo, 10, 10, 40, 15, false, opts, 0, "")
-	}
-
-	// Right logo (BRI)
-	if _, err := os.Stat(briLogo); err == nil {
-		pageWidth, _ := pdf.GetPageSize()
-		pdf.ImageOptions(briLogo, pageWidth-50, 10, 40, 15, false, opts, 0, "")
-	}
-
-	// Reset position for content
-	pdf.SetY(45)
-}
-
-func (s *PDFHandler) addContent(pdf *gofpdf.Fpdf, data interface{}) {
-	pageW, _ := pdf.GetPageSize()
-	x, y := pdf.GetXY()
-	fieldMap := s.extractFieldMap(data)
-
-	// Title
-	pdf.SetY(y - 8)
-	pdf.SetFont("Arial", "B", 16)
-	pdf.Cell(0, 10, "Laporan Transaksi")
-
-	// Status
-	pdf.SetY(y - 6)
-	pdf.SetFillColor(253, 239, 216) // #fdefd8
-	pdf.SetTextColor(144, 94, 10)   // #905e0a
-	pdf.SetX(pageW - 50)
-
-	pdf.CellFormat(40, 8, fieldMap["status"], "0", 0, "C", true, 0, "")
-	pdf.Ln(15)
-
-	// Reset text color
-	pdf.SetTextColor(0, 0, 0)
-
-	pdf.SetX(x)
-	pdf.Ln(0)
-
-	// Transaction ID
-	pdf.SetY(y)
-	pdf.SetFont("Arial", "", 12)
-	pdf.Cell(0, 8, "Transaction ID: "+fieldMap["transactionId"])
-	pdf.SetY(y)
-	pdf.Ln(16)
-
-	// Account Information - 3 columns
-	s.addAccountInfo(pdf, fieldMap)
-
-	// Line separator
-	pdf.Line(10, pdf.GetY()+8, pageW-10, pdf.GetY()+8)
-	pdf.Ln(10)
-
-	// Transaction Details
-	s.addTransactionDetails(pdf, fieldMap)
-
-	// Line separator
-	pdf.Line(10, pdf.GetY(), pageW-8, pdf.GetY())
-	pdf.Ln(4)
-
-	// Transaction Information
-	s.addTransactionInfo(pdf, fieldMap)
-
-	// Line separator
-	pdf.Line(10, pdf.GetY(), pageW-8, pdf.GetY())
-	pdf.Ln(4)
-
-	s.addDetailProduct(pdf, fieldMap)
-
-	// Line separator
-	pdf.Line(10, pdf.GetY(), pageW-8, pdf.GetY())
-	pdf.Ln(4)
-
-	s.addLogActivity(pdf, fieldMap)
-
-}
-
-// Helper function untuk cek perlu page break
-func (s *PDFHandler) needPageBreak(pdf *gofpdf.Fpdf, rowHeight float64) bool {
-	return pdf.GetY()+rowHeight > 250 // 297 - 25 - buffer
-}
-
-// Helper function untuk pastikan ada space untuk footer
-func (s *PDFHandler) ensureFooterSpace(pdf *gofpdf.Fpdf) {
-	currentY := pdf.GetY()
-	if currentY < 260 { // Jika masih ada space
-		pdf.SetY(260) // Set posisi ke 260mm dari atas
-	}
-}
-
-func (s *PDFHandler) addLogActivity(pdf *gofpdf.Fpdf, fieldMap map[string]string) {
-	// Title
-	pdf.SetX(10)
-	pdf.SetFont("Arial", "B", 12)
-	pdf.Cell(0, 10, "Log Aktivitas")
-	pdf.Ln(12)
-
-	// Log activity table (simplified)
-	logs := []struct {
-		no          string
-		date        string
-		name        string
-		role        string
-		action      string
-		description string
-	}{
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-		{"1", "30/01/2025 10:00:00", "Andre", "Maker", "Send for Approval", ""},
-		{"2", "30/01/2025 10:00:00", "Naufal", "Checker", "Aprrove", ""},
-		{"3", "30/01/2025 10:00:00", "Satya", "Checker", "Approve", ""},
-		{"4", "30/01/2025 10:00:00", "Arya", "Cheker", "Approve", ""},
-		{"5", "30/01/2025 10:00:00", "Billy", "Cheker", "Approve", ""},
-		{"6", "30/01/2025 10:00:00", "Tomo", "Checker", "Approve", ""},
-		{"7", "30/01/2025 10:00:00", "Fajar", "Signer", "Approve", ""},
-		{"8", "30/01/2025 10:00:00", "Alfa", "Releaser", "Approve", ""},
-	}
-
-	// Table header
-	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(20, 8, "No", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(50, 8, "Tanggal", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(30, 8, "Nama", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(30, 8, "Peran", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(70, 8, "Aksi", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(80, 8, "Deskripsi", "1", 0, "C", false, 0, "")
-	pdf.Ln(8)
-
-	// Table rows
-	pdf.SetFont("Arial", "", 10)
-	for _, log := range logs {
-		pdf.CellFormat(20, 8, log.no, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(50, 8, log.date, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(30, 8, log.name, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(30, 8, log.role, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(70, 8, log.action, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(80, 8, log.description, "1", 0, "C", false, 0, "")
-		pdf.Ln(8)
-	}
-
-	pdf.Ln(20)
-}
-
-func (s *PDFHandler) addDetailProduct(pdf *gofpdf.Fpdf, fieldMap map[string]string) {
-	// Title
-	pdf.SetX(10)
-	pdf.SetFont("Arial", "B", 12)
-	pdf.Cell(0, 10, "Detail Produk")
-	pdf.Ln(12)
-
-	// Product details table (simplified)
-	products := []struct {
-		material    string
-		description string
-		sendDate    string
-		trip        string
-		transporter string
-		uom         string
-		totalqty    string
-	}{
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-		{"A040900083", "", "30/01/2024", "1", "", "BB6", "4"},
-	}
-
-	// Table header
-	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(30, 8, "Material", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(25, 8, "Perjalanan", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(30, 8, "Total Kuantitas", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(20, 8, "UOM", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(55, 8, "Pengangkutan", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(40, 8, "Tanggal Kirim", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(80, 8, "Keterangan", "1", 0, "C", false, 0, "")
-	pdf.Ln(8)
-
-	// Table rows
-	pdf.SetFont("Arial", "", 10)
-	for _, prod := range products {
-		pdf.CellFormat(30, 8, prod.material, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(25, 8, prod.trip, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(30, 8, prod.totalqty, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(20, 8, prod.uom, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(55, 8, prod.transporter, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(40, 8, prod.sendDate, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(80, 8, prod.description, "1", 0, "C", false, 0, "")
-		pdf.Ln(8)
-	}
-
-	pdf.CellFormat(55, 8, "Total", "1", 0, "C", false, 0, "")
-	pdf.CellFormat(225, 8, "128", "1", 0, "C", false, 0, "")
-
-	pdf.Ln(20)
-}
-
-func (s *PDFHandler) addAccountInfo(pdf *gofpdf.Fpdf, fieldMap map[string]string) {
-	currentY := pdf.GetY()
-
-	// Column 1: Sumber Dana
-	pdf.SetX(10)
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetTextColor(107, 114, 128) // #6b7280
-	pdf.Cell(0, 6, "Sumber Dana")
-	pdf.Ln(6)
-
-	// Set text color to black for the first part
-	pdf.SetTextColor(0, 0, 0)
-	imagePathIconBRI := "assets" + "/images/icon.png"
-	imageIconBRIWidth := 14.0
-	imageIconBRIHeight := 14.0
-	x, y := pdf.GetXY()
-	pdf.ImageOptions(imagePathIconBRI, x+2, y+2, imageIconBRIWidth, imageIconBRIHeight, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
-	pdf.CellFormat(0, 6, "", "", 0, "L", false, 0, "")
-
-	pdf.SetX(10 + imageIconBRIWidth + 4)
-	pdf.SetTextColor(0, 0, 0)
-	pdf.SetFont("Arial", "", 10)
-	pdf.Cell(0, 8, fmt.Sprintf("%v - %v | %v...", fieldMap["debitAccountName"][0:5], fieldMap["debitAccountName"], fieldMap["accountNumber"][0:8]))
-	pdf.Ln(6)
-
-	pdf.SetX(10 + imageIconBRIWidth + 4)
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetTextColor(107, 114, 128)
-
-	// Tulis bagian pertama
-	pdf.CellFormat(0, 6, "BRI", "", 0, "L", false, 0, "")
-
-	briWidth := pdf.GetStringWidth("BRI")
-
-	// Tambahkan icon
-	iconX := 10 + imageIconBRIWidth + 4 + briWidth + 3
-	pdf.Image("assets/images/ellips.png", iconX, pdf.GetY()+2.5, 1, 1, false, "", 0, "")
-
-	// Lanjutkan dengan account number
-	pdf.SetX(iconX + 1 + 1) // iconWidth (1) + spacing (1)
-	pdf.Cell(0, 6, fmt.Sprintf("%v", fieldMap["accountNumber"]))
-
-	pdf.Ln(6)
-
-	iconsX := 10 + imageIconBRIWidth + 4 + 1
-	pdf.Image("assets/images/indonesia.png", iconsX, pdf.GetY()+1, 6, 4, false, "", 0, "")
-	pdf.SetX(iconsX + 6 + 2) // iconWidth (1) + spacing (1)
-	pdf.Cell(0, 6, "IDR")
-	pdf.Ln(10)
-
-	// Column 2: Tujuan Transaksi (position manually)
-	pdf.SetXY(100, currentY)
-	pdf.SetTextColor(107, 114, 128)
-	pdf.Cell(0, 6, "Tujuan Transaksi")
-	pdf.Ln(6)
-
-	// Set text color to black for the first part
-	pdf.SetTextColor(0, 0, 0)
-	imagePathIconPertamina := "assets" + "/images/pertamina.png"
-	imageIconPertaminaWidth := 14.0
-	imageIconPertaminaHeight := 14.0
-	pdf.SetXY(100, currentY)
-	x2, y2 := pdf.GetXY()
-	pdf.ImageOptions(imagePathIconPertamina, x2+2, y2+8, imageIconPertaminaWidth, imageIconPertaminaHeight, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
-	pdf.CellFormat(0, 6, "", "", 0, "L", false, 0, "")
-
-	// pdf.SetX(100 + imageIconPertaminaWidth + 2)
-	// pdf.SetFont("Arial", "B", 12)
-	// pdf.Cell(0, 8, "DO Pertamina")
-	pdf.Ln(6)
-
-	pdf.SetX(100 + imageIconPertaminaWidth + 6)
-	pdf.SetTextColor(0, 0, 0)
-	pdf.SetFont("Arial", "", 10)
-	pdf.Cell(0, 8, "DO Pertamina")
-	pdf.Ln(8)
-
-	pdf.SetX(100 + imageIconPertaminaWidth + 6)
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetTextColor(107, 114, 128)
-	pdf.Cell(0, 6, fieldMap["moduleType"])
-	pdf.Ln(10)
-
-	// Column 3: Total Pembayaran
-	pdf.SetXY(200, currentY)
-	pdf.SetTextColor(107, 114, 128)
-	pdf.Cell(0, 6, "Total Pembayaran")
-	pdf.Ln(6)
-
-	pdf.SetX(200)
-	pdf.SetTextColor(0, 0, 0)
-	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, fieldMap["totalPayment"])
-	pdf.Ln(16)
-}
-
-func (s *PDFHandler) addTransactionDetails(pdf *gofpdf.Fpdf, fieldMap map[string]string) {
-	currentY := pdf.GetY() + 3
-	pageW, _ := pdf.GetPageSize()
-
-	// Title
-	pdf.SetX(10)
-	pdf.SetFont("Arial", "B", 12)
-	pdf.Cell(0, 10, "Rincian Transaksi")
-	pdf.Ln(12)
-
-	// Details list
-	details := []struct {
-		label string
-		value string
-	}{
-		{"Nilai Bersih", fieldMap["netValue"]},
-		{"Pajak PPN", fieldMap["ppnTax"]},
-		{"Pajak PBBKB", fieldMap["pbbkbTax"]},
-		{"Pajak PPH", fieldMap["pphTax"]},
-		{"Nilai Kotor", fieldMap["grossValue"]},
-		{"Nilai Debit atau Kredit", fieldMap["debitCreditValue"]},
-		{"Total Nominal", fieldMap["totalAmount"]},
-	}
-
-	// Position details on the right side
-	for _, detail := range details {
-		pdf.SetXY(100, currentY)
-		pdf.SetFont("Arial", "", 10)
-		pdf.SetTextColor(107, 114, 128)
-		pdf.Cell(60, 6, detail.label)
-
-		pdf.SetXY(pageW-38, currentY)
-		pdf.SetTextColor(0, 0, 0)
-		pdf.CellFormat(30, 6, detail.value, "", 0, "R", false, 0, "")
-
-		currentY += 8
-	}
-
-	// Dotted line
-	pdf.Line(100, currentY+5, pageW-8, currentY+5)
-	currentY += 10
-
-	// Total Payment
-	pdf.SetXY(100, currentY)
-	pdf.SetFont("Arial", "B", 10)
-	pdf.SetTextColor(107, 114, 128)
-	pdf.Cell(60, 6, "Total Pembayaran")
-
-	pdf.SetXY(160, currentY)
-	pdf.SetTextColor(0, 0, 0)
-	pdf.Cell(30, 6, fieldMap["totalPayment"])
-
-	pdf.SetY(currentY + 15)
-}
-
-func (s *PDFHandler) addTransactionInfo(pdf *gofpdf.Fpdf, fieldMap map[string]string) {
-	currentY := pdf.GetY()
-
-	// Title
-	pdf.SetX(10)
-	pdf.SetFont("Arial", "B", 12)
-	pdf.Cell(0, 10, "Informasi Transaksi")
-	pdf.Ln(3)
-
-	// Two column layout
-	leftColumn := []struct {
-		label string
-		value string
-	}{
-		{"ID Transaksi", fieldMap["transactionId"]},
-		{"Tujuan Pengiriman", fieldMap["soldToName"]},
-		{"Pembeli", fieldMap["buyer"]},
-		{"Depo", fieldMap["depoName"]},
-	}
-
-	rightColumn := []struct {
-		label string
-		value string
-	}{
-		{"Organisasi Penjualan", fieldMap["salesOrganization"]},
-		{"Grup Produk", fieldMap["productGroup"]},
-		{"Channel Distribusi", fieldMap["distributionChannel"]},
-		{"Pembayar", fieldMap["payer"]},
-	}
-
-	// Left column
-	for _, info := range leftColumn {
-		pdf.SetX(100)
-		pdf.SetFont("Arial", "B", 10)
-		pdf.Cell(0, 6, info.label)
-		pdf.Ln(6)
-
-		pdf.SetX(100)
-		pdf.SetFont("Arial", "", 10)
-		pdf.Cell(0, 6, info.value)
-		pdf.Ln(10)
-	}
-
-	// Right column
-	rightColumnY := currentY + 3
-	for _, info := range rightColumn {
-		pdf.SetXY(200, rightColumnY)
-		pdf.SetFont("Arial", "B", 10)
-		pdf.Cell(0, 6, info.label)
-
-		pdf.SetXY(200, rightColumnY+6)
-		pdf.SetFont("Arial", "", 10)
-		pdf.Cell(0, 6, info.value)
-
-		rightColumnY += 16
-	}
-
-	pdf.SetY(rightColumnY + 10)
-}
-
-func (s *PDFHandler) addFooter(pdf *gofpdf.Fpdf) {
-	pageW, _ := pdf.GetPageSize()
-	// Dotted line
-	pdf.Line(10, pdf.GetY()+8, pageW-10, pdf.GetY()+8)
-	pdf.Ln(10)
-
-	// Footer text
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetTextColor(107, 114, 128) // #6b7280
-	pdf.MultiCell(0, 5, "Terima kasih telah bertransaksi menggunakan Qlola BRI, bila menemui kendala silakan hubungi kami di 1500001 atau qlola@bri.co.id", "", "L", false)
-}
-
-func (s *PDFHandler) extractFieldMap(data interface{}) map[string]string {
-	fieldMap := make(map[string]string)
-
-	// Default values
-	defaultFields := map[string]string{
-		"transactionId":       "N/A",
-		"status":              "Completed",
-		"debitAccountName":    "John Doe",
-		"accountNumber":       "1234567890",
-		"moduleType":          "Pertamina",
-		"totalPayment":        "Rp 10.000.000",
-		"netValue":            "Rp 8.000.000",
-		"ppnTax":              "Rp 800.000",
-		"pbbkbTax":            "Rp 600.000",
-		"pphTax":              "Rp 400.000",
-		"grossValue":          "Rp 9.800.000",
-		"debitCreditValue":    "Rp 9.800.000",
-		"totalAmount":         "Rp 10.000.000",
-		"soldToName":          "PT. Pertamina Jakarta",
-		"buyer":               "PT. Customer Indonesia",
-		"depoName":            "Depo Jakarta Selatan",
-		"salesOrganization":   "SO001",
-		"productGroup":        "Bahan Bakar",
-		"distributionChannel": "Direct Sales",
-		"payer":               "PT. Customer Indonesia",
-	}
-
-	// Copy defaults
-	for k, v := range defaultFields {
-		fieldMap[k] = v
-	}
-
-	// Override with actual data
-	if m, ok := data.(map[string]interface{}); ok {
-		for k, v := range m {
-			if strVal, ok := v.(string); ok {
-				fieldMap[k] = strVal
-			} else {
-				fieldMap[k] = fmt.Sprintf("%v", v)
-			}
-		}
-	}
-
-	return fieldMap
 }

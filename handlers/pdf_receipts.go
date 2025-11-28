@@ -257,7 +257,7 @@ func (h *PDFHandler) GenerateDownloadReceiptPDF(w http.ResponseWriter, r *http.R
 	})
 
 	data = append(data, Block{
-		Title:     "Rincian Transaksi",
+		Title:     "Informasi Transaksi",
 		Type:      BLOCK_TYPE_ROWS,
 		ShowTitle: true,
 		Fields: []Field{
@@ -348,6 +348,7 @@ func (h *PDFHandler) GenerateDownloadReceiptPDF(w http.ResponseWriter, r *http.R
  */
 
 const BLOCK_TYPE_ROWS = "rows"
+const BLOCK_TYPE_COLS = "cols"
 const BLOCK_TYPE_TABLE = "table"
 
 /*
@@ -406,10 +407,12 @@ type TableData struct {
 type Block struct {
 	Title                string
 	ShowTitle            bool
+	IsTitleInside        bool
 	Fields               []Field
 	TableData            TableData
 	Type                 string
 	ColumnStyleOverrides []ColumnStyleOverride
+	HideBackground       bool
 
 	/*
 	 * Special case for a row that needs to start from specific X position. To
@@ -608,15 +611,14 @@ func drawBlockRows(pdf *gofpdf.Fpdf, paper Paper, block Block) {
 		startX, startY := pdf.GetX(), pdf.GetY()
 
 		if field.IsTotal {
-			pdf.Ln(1)
-			drawDashedLine(pdf, startX, pdf.GetY(), startX+colWidths[0]+colWidths[1], pdf.GetY())
+			drawDashedLine(pdf, startX, pdf.GetY()+4.0, startX+colWidths[0]+colWidths[1], pdf.GetY()+4.0)
 
 			pdf.SetFont("BRIDigital", "B", 10)
 			pdf.SetTextColor(0, 0, 0)
-			pdf.SetXY(startX, startY)
+			pdf.SetXY(startX, startY+4)
 			pdf.CellFormat(colWidths[0], 10, fmt.Sprintf("%v", field.Key), "", 0, "L", false, 0, "")
 			// Draw Value
-			pdf.SetXY(startX+colWidths[0], startY+1)
+			pdf.SetXY(startX+colWidths[0], startY+4)
 			pdf.CellFormat(colWidths[1], 10, fmt.Sprintf("%v", field.Value), "", 0, "R", false, 0, "")
 			pdf.Ln(7)
 
@@ -640,6 +642,81 @@ func drawBlockRows(pdf *gofpdf.Fpdf, paper Paper, block Block) {
 			pdf.CellFormat(colWidths[1], 7, fmt.Sprintf("%v", field.Value), "", 0, "L", false, 0, "")
 		}
 		pdf.Ln(7)
+
+		// Set X back to left margin for next row
+		if block.StartFrom > 0 {
+			pdf.SetX(paper.RectSetup.InnerX + (paper.RectSetup.InnerW * block.StartFrom))
+		} else {
+			pdf.SetX(paper.RectSetup.InnerX)
+		}
+	}
+
+	// Set Y to current Y + gap for the end of the block
+	pdf.SetY(pdf.GetY() + 4)
+}
+
+/*
+ * Draw block with columns layout. The layout is similar to rows, but
+ * the key-value pairs are arranged in columns instead of rows. The
+ * column only shows two columns. and each column has key and value.
+ * Same as rows, the column starts after the title if the title is shown.
+ */
+func drawBlockCols(pdf *gofpdf.Fpdf, paper Paper, block Block) {
+	if block.StartFrom > 0 {
+		pdf.SetX(paper.RectSetup.InnerX + (paper.RectSetup.InnerW * block.StartFrom))
+	} else {
+		pdf.SetX(paper.RectSetup.InnerX)
+	}
+
+	columnPersentage := []int{50, 50}
+	if len(block.ColumnStyleOverrides) > 0 {
+		for _, colStyle := range block.ColumnStyleOverrides {
+			switch colStyle.ColIndex {
+			case 0:
+				columnPersentage[0] = int(colStyle.Width * 100)
+			case 1:
+				columnPersentage[1] = int(colStyle.Width * 100)
+			}
+		}
+	}
+
+	// Calculate column widths based on percentage
+	totalWidth := paper.RectSetup.InnerW - (paper.RectSetup.InnerW * block.StartFrom)
+	colWidths := []float64{
+		(totalWidth * float64(columnPersentage[0])) / 100,
+		(totalWidth * float64(columnPersentage[1])) / 100,
+	}
+
+	for i := 0; i < len(block.Fields); i += 2 {
+		startX, startY := pdf.GetX(), pdf.GetY()
+
+		// Draw Key 1
+		pdf.SetFont("BRIDigital-Light", "", 10)
+		pdf.SetTextColor(107, 104, 128)
+		pdf.SetXY(startX, startY)
+		pdf.CellFormat(colWidths[0], 7, fmt.Sprintf("%v", block.Fields[i].Key), "", 0, "L", false, 0, "")
+
+		// Draw Key 2 if exists
+		if i+1 < len(block.Fields) {
+			pdf.SetXY(startX+colWidths[0], startY)
+			pdf.CellFormat(colWidths[1], 7, fmt.Sprintf("%v", block.Fields[i+1].Key), "", 0, "L", false, 0, "")
+		}
+
+		pdf.Ln(7)
+
+		pdf.SetFont("BRIDigital", "B", 11)
+
+		// Draw Value 1
+		pdf.SetTextColor(0, 0, 0)
+		pdf.SetXY(startX, pdf.GetY())
+		pdf.CellFormat(colWidths[0], 7, fmt.Sprintf("%v", block.Fields[i].Value), "", 0, "L", false, 0, "")
+
+		// Draw Value 2 if exists
+		if i+1 < len(block.Fields) {
+			pdf.SetXY(startX+colWidths[0], pdf.GetY())
+			pdf.CellFormat(colWidths[1], 7, fmt.Sprintf("%v", block.Fields[i+1].Value), "", 0, "L", false, 0, "")
+		}
+		pdf.Ln(9)
 
 		// Set X back to left margin for next row
 		if block.StartFrom > 0 {
@@ -691,6 +768,8 @@ func drawBlockTable(pdf *gofpdf.Fpdf, paper Paper, block Block) {
 		// Draw the row
 		drawTableRow(pdf, paper, block, tableRow, rowIdx, len(block.TableData.Rows), rowHeight, borderRadius)
 	}
+
+	pdf.SetY(pdf.GetY() + 4)
 }
 
 // Helper function to calculate row height
@@ -820,8 +899,8 @@ func GetPaperA4() Paper {
 			Height: 297,
 		},
 		MarginSetup: MarginSetup{
-			XMargin: 7.9375,
-			YMargin: 7.9375,
+			XMargin: 6,
+			YMargin: 7.9,
 		},
 		TransformSetup: TransformSetup{
 			X: struct {

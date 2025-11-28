@@ -19,8 +19,8 @@ func main() {
 	r := mux.NewRouter()
 
 	// Routes
-	r.HandleFunc("/api/generate-pdf", pdfHandler.GeneratePDF).Methods("POST")
-	r.HandleFunc("/api/generate-receipt", pdfHandler.GenerateDownloadReceiptPDF).Methods("POST")
+	r.HandleFunc("/api/generate-pdf", pdfHandler.GeneratePDF).Methods("GET")
+	r.HandleFunc("/api/generate-receipt", pdfHandler.GenerateDownloadReceiptPDF).Methods("GET")
 
 	// Health check
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
